@@ -101,23 +101,35 @@ const ExercisesScreen: React.FC = () => {
 
     return (
         <div className="relative h-full">
-            <div className="p-4 space-y-6 pb-40">
+            <div className="p-4 lg:p-6 space-y-6 pb-40">
                 {/* --- Search and Filter UI --- */}
                 <div className="space-y-4">
-                    {/* Search */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <SearchIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary" />
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                        {/* Search */}
+                        <div className="relative flex-grow">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nome do exercício..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-light-text dark:text-dark-text focus:ring-2 focus:ring-primary focus:border-primary transition-colors h-[42px]"
+                                aria-label="Buscar exercícios"
+                            />
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Buscar por nome do exercício..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-light-text dark:text-dark-text focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                            aria-label="Buscar exercícios"
-                        />
+                         {/* Desktop Add Button */}
+                        <button
+                            onClick={openAddModal}
+                            className="hidden lg:flex bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg items-center flex-shrink-0 h-[42px]"
+                            aria-label="Adicionar novo exercício"
+                        >
+                            <PlusIcon className="h-5 w-5 mr-2" />
+                            Novo Exercício
+                        </button>
                     </div>
+
                     {/* Filters */}
                     <div className="flex flex-col sm:flex-row gap-4">
                         {/* Category Filter */}
@@ -198,7 +210,7 @@ const ExercisesScreen: React.FC = () => {
                 )}
             </div>
 
-            <div className="fixed inset-0 z-20 pointer-events-none">
+            <div className="fixed inset-0 z-20 pointer-events-none lg:hidden">
                 <div className="max-w-md mx-auto relative h-full">
                     <button
                         onClick={openAddModal}

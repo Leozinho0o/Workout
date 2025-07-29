@@ -5,66 +5,7 @@ import { Exercise, WorkoutSession, LoggedExercise, WorkoutSet, MeasurementType, 
 import { ChevronLeftIcon, PlusIcon, TrashIcon, XIcon, CheckCircleIcon, ChevronDownIcon } from '../components/Icons';
 import { getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
-
-const formatSecondsToMMSS = (totalSeconds: number | null | undefined): string => {
-  if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds < 0) {
-    return '';
-  }
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-};
-
-const formatDuration = (totalSeconds: number): string => {
-    if (isNaN(totalSeconds) || totalSeconds < 0) {
-        return '00:00';
-    }
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    const paddedMinutes = String(minutes).padStart(2, '0');
-    const paddedSeconds = String(seconds).padStart(2, '0');
-    
-    if (hours > 0) {
-        const paddedHours = String(hours).padStart(2, '0');
-        return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
-    }
-
-    return `${paddedMinutes}:${paddedSeconds}`;
-};
-
-const parseTimeToSeconds = (timeStr: string): number | undefined => {
-    if (!timeStr || typeof timeStr !== 'string' || timeStr.trim() === '') {
-        return undefined;
-    }
-
-    const cleanValue = timeStr.replace(/[^0-9:]/g, '');
-    if (cleanValue.trim() === '') return undefined;
-
-    if (cleanValue.includes(':')) {
-        const parts = cleanValue.split(':');
-        const minutes = parseInt(parts[0], 10) || 0;
-        const seconds = parseInt(parts[1], 10) || 0;
-        if (isNaN(minutes) || isNaN(seconds)) return undefined;
-        return minutes * 60 + seconds;
-    }
-
-    const num = parseInt(cleanValue, 10);
-    if (isNaN(num)) return undefined;
-
-    // Smart parsing for numbers without a colon:
-    // Treat as MMSS, e.g., 130 -> 1 minute 30 seconds
-    if (num >= 100) {
-        const minutes = Math.floor(num / 100);
-        const seconds = num % 100;
-        return minutes * 60 + seconds;
-    }
-    
-    // Treat numbers under 100 as raw seconds
-    return num;
-};
-
+import { formatSecondsToMMSS, formatDuration, parseTimeToSeconds } from '../utils';
 
 // Time Input Component for better UX
 interface TimeInputProps {
@@ -122,6 +63,7 @@ const WorkoutSessionScreen: React.FC = () => {
         setActiveWorkoutSession, 
         routines, 
         exercises, 
+        workouts,
         updateWorkout,
         logWorkout,
         deleteWorkout
@@ -189,6 +131,31 @@ const WorkoutSessionScreen: React.FC = () => {
         routines.find(r => r.id === activeWorkoutSession?.routineId),
     [routines, activeWorkoutSession]);
     
+    const historicalData = useMemo(() => {
+        if (!activeWorkoutSession) return new Map<string, LoggedExercise>();
+
+        const historyMap = new Map<string, LoggedExercise>();
+        const relevantExerciseIds = activeWorkoutSession.loggedExercises.map(ex => ex.exerciseId);
+        
+        const completedWorkouts = workouts
+            .filter((w: WorkoutSession) => w.completed && w.date)
+            .sort((a: WorkoutSession, b: WorkoutSession) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        for (const exerciseId of relevantExerciseIds) {
+            if (historyMap.has(exerciseId)) continue;
+
+            for (const workout of completedWorkouts) {
+                const loggedEx = workout.loggedExercises.find(le => le.exerciseId === exerciseId);
+                if (loggedEx && loggedEx.sets.length > 0) {
+                    historyMap.set(exerciseId, loggedEx);
+                    break;
+                }
+            }
+        }
+        return historyMap;
+    }, [activeWorkoutSession, workouts]);
+
+
     if (!activeWorkoutSession || !routine) {
         return (
             <div className="p-4 text-center">
@@ -391,7 +358,8 @@ const WorkoutSessionScreen: React.FC = () => {
                 {loggedExercises.map((loggedEx, exIndex) => {
                     const exercise = exercises.find(e => e.id === loggedEx.exerciseId);
                     if (!exercise) return null;
-
+                    
+                    const lastLoggedExercise = historicalData.get(exercise.id);
                     const scaleOptions = getScaleOptions(exercise.perceivedExertionScale);
                     const exerciseSets = loggedEx.sets || [];
                     const setsToRender = exerciseSets.length > 0 ? exerciseSets : [{}];
@@ -423,12 +391,9 @@ const WorkoutSessionScreen: React.FC = () => {
 
                             <div className="space-y-2">
                                 {setsToRender.map((set, setIndex) => {
-                                    // Get the corresponding original planned set for placeholders
                                     const originalSet = originalPlanRef.current[exIndex]?.sets[setIndex] || {};
-
                                     const isCountType = exercise.measurementType === MeasurementType.COUNT;
                                     
-                                    // Define placeholders based on the original plan
                                     let repsTimePlaceholder = '';
                                     if (isCountType) {
                                         const plannedSingleRep = activeWorkoutSession?.completed ? set.reps : originalSet.reps;
@@ -442,96 +407,123 @@ const WorkoutSessionScreen: React.FC = () => {
                                     
                                     const valueFromPlan = activeWorkoutSession?.completed ? set.value : originalSet.value;
                                     const valuePlaceholder = valueFromPlan?.toString() ?? '';
-
                                     const effortFromPlan = activeWorkoutSession?.completed ? set.effort : originalSet.effort;
+
+                                    const lastSetData = lastLoggedExercise?.sets[setIndex];
+                                    let lastSetString = '';
+                                    if (lastSetData && !activeWorkoutSession.completed) {
+                                        const parts = [];
+                                        if (exercise.category === ExerciseCategory.RESISTED) {
+                                            if (lastSetData.reps !== undefined) parts.push(`${lastSetData.reps} reps`);
+                                            if (lastSetData.value !== undefined && exercise.unit === Unit.KG) parts.push(`${lastSetData.value}kg`);
+                                            else if (lastSetData.value !== undefined && exercise.unit !== Unit.NONE) parts.push(`${lastSetData.value} ${exercise.unit}`);
+                                            if (lastSetData.effort) parts.push(`PSE ${lastSetData.effort}`);
+                                            if (parts.length > 0) lastSetString = `Último: ${parts.join(' x ')}`;
+                                        } else if (exercise.category === ExerciseCategory.FLEXIBILITY) {
+                                            if (exercise.measurementType === MeasurementType.TIME) {
+                                                if (lastSetData.time !== undefined) parts.push(formatSecondsToMMSS(lastSetData.time));
+                                            } else {
+                                                if (lastSetData.reps !== undefined) parts.push(`${lastSetData.reps} reps`);
+                                            }
+                                            if (lastSetData.effort) parts.push(`PSE ${lastSetData.effort}`);
+                                            if (parts.length > 0) lastSetString = `Último: ${parts.join(' x ')}`;
+                                        }
+                                    }
                                     
                                     return (
-                                        <div key={setIndex} className={`grid grid-cols-12 gap-2 items-center transition-opacity ${set.completed ? 'opacity-50' : ''}`}>
-                                            <div className="col-span-1 flex items-center justify-center">
-                                                <input 
-                                                    type="checkbox"
-                                                    aria-label={`Marcar série ${setIndex + 1} como completa`}
-                                                    checked={!!set.completed}
-                                                    onChange={() => handleToggleSetComplete(loggedEx.tempId, setIndex)}
-                                                    className="h-5 w-5 rounded text-secondary bg-light-bg dark:bg-dark-bg border-light-border dark:border-dark-border focus:ring-secondary focus:ring-2 cursor-pointer"
-                                                />
-                                            </div>
-                                            <div className={`col-span-1 flex items-center justify-center h-10 bg-light-bg dark:bg-dark-bg rounded-md font-bold text-light-text dark:text-dark-text ${set.completed ? 'line-through' : ''}`}>{setIndex + 1}</div>
-                                            <div className="col-span-2">
-                                                {isCountType ? (
+                                        <div key={setIndex}>
+                                            <div className={`grid grid-cols-12 gap-2 items-center transition-opacity ${set.completed ? 'opacity-50' : ''}`}>
+                                                <div className="col-span-1 flex items-center justify-center">
                                                     <input 
-                                                        type="number" 
-                                                        inputMode="numeric"
-                                                        aria-label={`Repetições para série ${setIndex + 1}`}
-                                                        placeholder={repsTimePlaceholder}
-                                                        value={set.reps ?? ''}
-                                                        onFocus={(e) => e.target.select()}
-                                                        onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'reps', e.target.value)}
-                                                        className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
+                                                        type="checkbox"
+                                                        aria-label={`Marcar série ${setIndex + 1} como completa`}
+                                                        checked={!!set.completed}
+                                                        onChange={() => handleToggleSetComplete(loggedEx.tempId, setIndex)}
+                                                        className="h-5 w-5 rounded text-secondary bg-light-bg dark:bg-dark-bg border-light-border dark:border-dark-border focus:ring-secondary focus:ring-2 cursor-pointer"
                                                     />
-                                                ) : (
-                                                    <TimeInput
-                                                        id={`session-time-input-${loggedEx.tempId}-${setIndex}`}
-                                                        valueInSeconds={set.time}
-                                                        onChangeInSeconds={(seconds) => {
-                                                            setLoggedExercises(currentLogs => currentLogs.map(log => {
-                                                                if (log.tempId !== loggedEx.tempId) return log;
-                                                                const newSets = [...log.sets];
-                                                                const updatedSet = { ...(newSets[setIndex] || {}) };
-                                                                updatedSet.time = seconds;
-                                                                newSets[setIndex] = updatedSet;
-                                                                return { ...log, sets: newSets };
-                                                            }));
-                                                        }}
-                                                        placeholder={repsTimePlaceholder}
-                                                        className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
-                                                    />
-                                                )}
-                                            </div>
-                                            <div className="col-span-3">
-                                                 {exercise.unit !== Unit.NONE &&
-                                                    <input 
-                                                        type="number" 
-                                                        aria-label={`Peso para série ${setIndex + 1}`}
-                                                        placeholder={valuePlaceholder}
-                                                        value={set.value ?? ''}
-                                                        onFocus={(e) => e.target.select()}
-                                                        onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'value', e.target.value)}
-                                                        className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
-                                                    />
-                                                 }
-                                            </div>
-                                            <div className="col-span-4">
-                                                {scaleOptions && (
-                                                    <div className="relative h-10 w-full">
-                                                        <div 
-                                                            className={`w-full h-full flex items-center justify-between bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md px-2 text-left text-sm transition-colors duration-300 pointer-events-none ${set.completed ? 'line-through' : ''} ${!set.effort ? 'text-light-text-secondary dark:text-dark-text-secondary' : 'text-light-text dark:text-dark-text'}`}
-                                                        >
-                                                            <span className="truncate">
-                                                                {set.effort || (effortFromPlan ? `Sug: ${effortFromPlan}` : 'Selecionar...')}
-                                                            </span>
-                                                            <ChevronDownIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary" />
-                                                        </div>
+                                                </div>
+                                                <div className={`col-span-1 flex items-center justify-center h-10 bg-light-bg dark:bg-dark-bg rounded-md font-bold text-light-text dark:text-dark-text ${set.completed ? 'line-through' : ''}`}>{setIndex + 1}</div>
+                                                <div className="col-span-2">
+                                                    {isCountType ? (
+                                                        <input 
+                                                            type="number" 
+                                                            inputMode="numeric"
+                                                            aria-label={`Repetições para série ${setIndex + 1}`}
+                                                            placeholder={repsTimePlaceholder}
+                                                            value={set.reps ?? ''}
+                                                            onFocus={(e) => e.target.select()}
+                                                            onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'reps', e.target.value)}
+                                                            className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
+                                                        />
+                                                    ) : (
+                                                        <TimeInput
+                                                            id={`session-time-input-${loggedEx.tempId}-${setIndex}`}
+                                                            valueInSeconds={set.time}
+                                                            onChangeInSeconds={(seconds) => {
+                                                                setLoggedExercises(currentLogs => currentLogs.map(log => {
+                                                                    if (log.tempId !== loggedEx.tempId) return log;
+                                                                    const newSets = [...log.sets];
+                                                                    const updatedSet = { ...(newSets[setIndex] || {}) };
+                                                                    updatedSet.time = seconds;
+                                                                    newSets[setIndex] = updatedSet;
+                                                                    return { ...log, sets: newSets };
+                                                                }));
+                                                            }}
+                                                            placeholder={repsTimePlaceholder}
+                                                            className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
+                                                        />
+                                                    )}
+                                                </div>
+                                                <div className="col-span-3">
+                                                    {exercise.unit !== Unit.NONE &&
+                                                        <input 
+                                                            type="number" 
+                                                            aria-label={`Peso para série ${setIndex + 1}`}
+                                                            placeholder={valuePlaceholder}
+                                                            value={set.value ?? ''}
+                                                            onFocus={(e) => e.target.select()}
+                                                            onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'value', e.target.value)}
+                                                            className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
+                                                        />
+                                                    }
+                                                </div>
+                                                <div className="col-span-4">
+                                                    {scaleOptions && (
+                                                        <div className="relative h-10 w-full">
+                                                            <div 
+                                                                className={`w-full h-full flex items-center justify-between bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md px-2 text-left text-sm transition-colors duration-300 pointer-events-none ${set.completed ? 'line-through' : ''} ${!set.effort ? 'text-light-text-secondary dark:text-dark-text-secondary' : 'text-light-text dark:text-dark-text'}`}
+                                                            >
+                                                                <span className="truncate">
+                                                                    {set.effort || (effortFromPlan ? `Sug: ${effortFromPlan}` : 'Selecionar...')}
+                                                                </span>
+                                                                <ChevronDownIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary" />
+                                                            </div>
 
-                                                        <select
-                                                            value={set.effort || ''}
-                                                            onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'effort', e.target.value)}
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                            aria-label={`Esforço para série ${setIndex + 1}`}
-                                                        >
-                                                            <option value="">-</option>
-                                                            {scaleOptions.map(opt => (
-                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                )}
+                                                            <select
+                                                                value={set.effort || ''}
+                                                                onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'effort', e.target.value)}
+                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                aria-label={`Esforço para série ${setIndex + 1}`}
+                                                            >
+                                                                <option value="">-</option>
+                                                                {scaleOptions.map(opt => (
+                                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="col-span-1 flex justify-center">
+                                                    <button onClick={() => handleDeleteSet(loggedEx.tempId, setIndex)} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Deletar série ${setIndex + 1}`}>
+                                                        <TrashIcon className="h-5 w-5" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="col-span-1 flex justify-center">
-                                                <button onClick={() => handleDeleteSet(loggedEx.tempId, setIndex)} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Deletar série ${setIndex + 1}`}>
-                                                    <TrashIcon className="h-5 w-5" />
-                                                </button>
-                                            </div>
+                                            {lastSetString && (
+                                                <div className="w-full text-center text-xs text-secondary dark:text-pink-400 mt-1" aria-label={`Dados da última vez: ${lastSetString}`}>
+                                                    {lastSetString}
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 })}

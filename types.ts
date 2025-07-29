@@ -91,6 +91,7 @@ export enum View {
   EXERCISES = 'Exercícios',
   CALENDAR = 'Agenda',
   STATS = 'Estatísticas',
+  SETTINGS = 'Configurações',
 }
 
 export enum Theme {

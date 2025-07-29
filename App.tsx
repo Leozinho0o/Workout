@@ -8,6 +8,7 @@ import ExercisesScreen from './screens/ExercisesScreen';
 import WorkoutSessionScreen from './screens/WorkoutSessionScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import StatsScreen from './screens/StatsScreen';
+import Sidebar from './components/Sidebar';
 
 import { DumbbellIcon, RepeatIcon, CalendarIcon, BarChartIcon, SettingsIcon } from './components/Icons';
 
@@ -51,17 +52,16 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<Re
 
 const App: React.FC = () => {
     const [activeView, setActiveView] = useState<View>(View.ROUTINES);
-    const [isSettingsVisible, setSettingsVisible] = useState(false);
     
     // Data state using localStorage for persistence
-    const [exercises, setExercises] = useLocalStorage<Exercise[]>('gympro_exercises', INITIAL_EXERCISES);
-    const [routines, setRoutines] = useLocalStorage<Routine[]>('gympro_routines', INITIAL_ROUTINES);
-    const [folders, setFolders] = useLocalStorage<Folder[]>('gympro_folders', INITIAL_FOLDERS);
-    const [workouts, setWorkouts] = useLocalStorage<WorkoutSession[]>('gympro_workouts', []);
-    const [muscleGroups, setMuscleGroups] = useLocalStorage<string[]>('gympro_muscleGroups', DEFAULT_MUSCLE_GROUPS);
+    const [exercises, setExercises] = useLocalStorage<Exercise[]>('vitruvian_fit_exercises', INITIAL_EXERCISES);
+    const [routines, setRoutines] = useLocalStorage<Routine[]>('vitruvian_fit_routines', INITIAL_ROUTINES);
+    const [folders, setFolders] = useLocalStorage<Folder[]>('vitruvian_fit_folders', INITIAL_FOLDERS);
+    const [workouts, setWorkouts] = useLocalStorage<WorkoutSession[]>('vitruvian_fit_workouts', []);
+    const [muscleGroups, setMuscleGroups] = useLocalStorage<string[]>('vitruvian_fit_muscleGroups', DEFAULT_MUSCLE_GROUPS);
 
     // Theme state
-    const [theme, setTheme] = useLocalStorage<Theme>('gympro_theme', Theme.SYSTEM);
+    const [theme, setTheme] = useLocalStorage<Theme>('vitruvian_fit_theme', Theme.SYSTEM);
 
     // Active workout state
     const [activeWorkoutSession, setActiveWorkoutSession] = useState<WorkoutSession | null>(null);
@@ -274,49 +274,50 @@ const App: React.FC = () => {
         if (activeWorkoutSession) {
             return <WorkoutSessionScreen />;
         }
-        if (isSettingsVisible) {
-            return <SettingsScreen />;
-        }
         switch (activeView) {
             case View.ROUTINES: return <RoutinesScreen />;
             case View.EXERCISES: return <ExercisesScreen />;
             case View.CALENDAR: return <CalendarScreen />;
             case View.STATS: return <StatsScreen />;
+            case View.SETTINGS: return <SettingsScreen />;
             default: return <RoutinesScreen />;
         }
     };
 
     const handleNavClick = (view: View) => {
-        setSettingsVisible(false);
         setActiveView(view);
     }
 
     return (
         <AppContext.Provider value={contextValue}>
-            <div className="h-screen w-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text flex flex-col font-sans max-w-xl mx-auto shadow-2xl">
-                {!activeWorkoutSession && (
-                    <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4">
-                        <h1 className="text-xl font-bold text-light-text dark:text-dark-text">
-                            {isSettingsVisible ? "Configurações" : activeView}
-                        </h1>
-                        <button onClick={() => setSettingsVisible(!isSettingsVisible)} className="p-2 flex items-center justify-center">
-                            <SettingsIcon className={`h-6 w-6 ${isSettingsVisible ? 'text-secondary' : 'text-light-text-secondary dark:text-dark-text-secondary'}`} />
-                        </button>
-                    </header>
-                )}
+            <div className="h-screen w-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text flex font-sans">
+                {!activeWorkoutSession && <Sidebar activeView={activeView} setActiveView={handleNavClick} />}
                 
-                <main className="flex-grow overflow-y-auto bg-light-bg dark:bg-dark-bg">
-                    {renderContent()}
-                </main>
+                <div className="flex-1 flex flex-col h-screen max-w-xl mx-auto lg:max-w-none lg:mx-0 shadow-2xl lg:shadow-none">
+                    {!activeWorkoutSession && (
+                        <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4 lg:px-6 border-b border-light-border dark:border-dark-border">
+                            <h1 className="text-xl font-bold text-light-text dark:text-dark-text">
+                                {activeView}
+                            </h1>
+                            <button onClick={() => setActiveView(View.SETTINGS)} className="p-2 flex items-center justify-center lg:hidden">
+                                <SettingsIcon className={`h-6 w-6 ${activeView === View.SETTINGS ? 'text-secondary' : 'text-light-text-secondary dark:text-dark-text-secondary'}`} />
+                            </button>
+                        </header>
+                    )}
+                    
+                    <main className="flex-grow overflow-y-auto bg-light-bg dark:bg-dark-bg">
+                        {renderContent()}
+                    </main>
 
-                {!activeWorkoutSession && (
-                    <nav className="flex-shrink-0 bg-light-card dark:bg-dark-card h-20 flex justify-around items-center border-t border-light-border dark:border-dark-border">
-                        <NavItem icon={<RepeatIcon className="h-6 w-6" />} label={View.ROUTINES} activeView={activeView} onClick={handleNavClick} />
-                        <NavItem icon={<DumbbellIcon className="h-6 w-6" />} label={View.EXERCISES} activeView={activeView} onClick={handleNavClick} />
-                        <NavItem icon={<CalendarIcon className="h-6 w-6" />} label={View.CALENDAR} activeView={activeView} onClick={handleNavClick} />
-                        <NavItem icon={<BarChartIcon className="h-6 w-6" />} label={View.STATS} activeView={activeView} onClick={handleNavClick} />
-                    </nav>
-                )}
+                    {!activeWorkoutSession && (
+                        <nav className="flex-shrink-0 bg-light-card dark:bg-dark-card h-20 flex justify-around items-center border-t border-light-border dark:border-dark-border lg:hidden">
+                            <NavItem icon={<RepeatIcon className="h-6 w-6" />} label={View.ROUTINES} activeView={activeView} onClick={handleNavClick} />
+                            <NavItem icon={<DumbbellIcon className="h-6 w-6" />} label={View.EXERCISES} activeView={activeView} onClick={handleNavClick} />
+                            <NavItem icon={<CalendarIcon className="h-6 w-6" />} label={View.CALENDAR} activeView={activeView} onClick={handleNavClick} />
+                            <NavItem icon={<BarChartIcon className="h-6 w-6" />} label={View.STATS} activeView={activeView} onClick={handleNavClick} />
+                        </nav>
+                    )}
+                </div>
             </div>
         </AppContext.Provider>
     );

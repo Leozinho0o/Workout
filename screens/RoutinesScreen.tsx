@@ -2,49 +2,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Routine, Folder, Exercise, ExerciseCategory, PlannedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale } from '../types';
-import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon } from '../components/Icons';
+import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon, InfoIcon } from '../components/Icons';
 import { ROUTINE_COLORS, getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
-
-const formatSecondsToMMSS = (totalSeconds: number | null | undefined): string => {
-  if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds < 0) {
-    return '';
-  }
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-};
-
-const parseTimeToSeconds = (timeStr: string): number | undefined => {
-    if (!timeStr || typeof timeStr !== 'string' || timeStr.trim() === '') {
-        return undefined;
-    }
-
-    const cleanValue = timeStr.replace(/[^0-9:]/g, '');
-    if (cleanValue.trim() === '') return undefined;
-
-    if (cleanValue.includes(':')) {
-        const parts = cleanValue.split(':');
-        const minutes = parseInt(parts[0], 10) || 0;
-        const seconds = parseInt(parts[1], 10) || 0;
-        if (isNaN(minutes) || isNaN(seconds)) return undefined;
-        return minutes * 60 + seconds;
-    }
-
-    const num = parseInt(cleanValue, 10);
-    if (isNaN(num)) return undefined;
-
-    // Smart parsing for numbers without a colon:
-    // Treat as MMSS, e.g., 130 -> 1 minute 30 seconds
-    if (num >= 100) {
-        const minutes = Math.floor(num / 100);
-        const seconds = num % 100;
-        return minutes * 60 + seconds;
-    }
-    
-    // Treat numbers under 100 as raw seconds
-    return num;
-};
+import { formatSecondsToMMSS, parseTimeToSeconds } from '../utils';
+import FolderStatsModal from '../components/FolderStatsModal';
 
 
 // Time Input Component for better UX
@@ -103,12 +65,28 @@ const RoutinesScreen = () => {
     const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
     const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
     const [isAddOptionsOpen, setIsAddOptionsOpen] = useState(false);
+    const [folderForStats, setFolderForStats] = useState<Folder | null>(null);
     
     const [confirmDeleteRoutineInfo, setConfirmDeleteRoutineInfo] = useState<{ id: string; name: string } | null>(null);
     const [confirmDeleteFolderInfo, setConfirmDeleteFolderInfo] = useState<{ id: string; name: string } | null>(null);
     
     const [dropTarget, setDropTarget] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    const addOptionsRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (isAddOptionsOpen && addOptionsRef.current && !addOptionsRef.current.contains(event.target as Node)) {
+                setIsAddOptionsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isAddOptionsOpen]);
+
 
     const { finalFolders, finalRoutines } = useMemo(() => {
         const query = searchQuery.toLowerCase().trim();
@@ -186,20 +164,47 @@ const RoutinesScreen = () => {
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDropOnRoot}
         >
-            <div className="p-4 space-y-4 pb-40">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <SearchIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary" />
+            <div className="p-4 lg:p-6 space-y-4 pb-40">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                    <div className="relative flex-grow">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <SearchIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Pesquisar rotinas ou pastas..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-light-text dark:text-dark-text focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                            aria-label="Pesquisar rotinas e pastas"
+                        />
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Pesquisar rotinas ou pastas..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-light-text dark:text-dark-text focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                        aria-label="Pesquisar rotinas e pastas"
-                    />
+                    {/* Desktop Add Button */}
+                    <div className="hidden lg:block ml-4 relative" ref={addOptionsRef}>
+                        <button
+                            onClick={() => setIsAddOptionsOpen(prev => !prev)}
+                            className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-md flex items-center"
+                            aria-haspopup="true"
+                            aria-expanded={isAddOptionsOpen}
+                        >
+                            <PlusIcon className="h-5 w-5 mr-2" />
+                            Adicionar
+                        </button>
+                        {isAddOptionsOpen && (
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-light-card dark:bg-dark-card rounded-lg shadow-xl z-20 border border-light-border dark:border-dark-border p-1">
+                                <button onClick={handleOpenAddRoutine} className="w-full text-left flex items-center p-2 rounded-md hover:bg-light-bg dark:hover:bg-dark-bg text-light-text dark:text-dark-text">
+                                    <div className="h-4 w-4 rounded-sm bg-secondary mr-3 flex-shrink-0"></div>
+                                    Nova Rotina
+                                </button>
+                                <button onClick={handleOpenAddFolder} className="w-full text-left flex items-center p-2 rounded-md hover:bg-light-bg dark:hover:bg-dark-bg text-light-text dark:text-dark-text">
+                                    <FolderIcon className="h-5 w-5 text-yellow-400 mr-3 flex-shrink-0" />
+                                    Nova Pasta
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
 
                 {finalFolders.map((folder: Folder) => (
                     <FolderItem
@@ -231,6 +236,10 @@ const RoutinesScreen = () => {
                         onDeleteFolder={(e) => {
                             e.stopPropagation();
                             setConfirmDeleteFolderInfo({ id: folder.id, name: folder.name });
+                        }}
+                        onShowStats={(e) => {
+                            e.stopPropagation();
+                            setFolderForStats(folder);
                         }}
                         isDropTarget={dropTarget === folder.id}
                         setDropTarget={setDropTarget}
@@ -272,8 +281,8 @@ const RoutinesScreen = () => {
                 )}
             </div>
 
-            {/* FAB and Add Options */}
-            <div className="fixed inset-0 z-20 pointer-events-none">
+            {/* FAB and Add Options for Mobile */}
+            <div className="fixed inset-0 z-20 pointer-events-none lg:hidden" ref={addOptionsRef}>
                 <div className="max-w-md mx-auto relative h-full">
                     <div className="absolute bottom-24 right-6 pointer-events-auto">
                         {isAddOptionsOpen && (
@@ -330,6 +339,14 @@ const RoutinesScreen = () => {
                     folderToEdit={editingFolder}
                 />
             )}
+            {folderForStats && (
+                <FolderStatsModal
+                    folder={folderForStats}
+                    routines={routines}
+                    exercises={exercises}
+                    onClose={() => setFolderForStats(null)}
+                />
+            )}
             {confirmDeleteRoutineInfo && (
                 <ConfirmationModal
                     isOpen={!!confirmDeleteRoutineInfo}
@@ -364,11 +381,12 @@ interface FolderItemProps {
     onStartWorkout: (e: React.MouseEvent, routineId: string) => void;
     onEditFolder: (e: React.MouseEvent) => void;
     onDeleteFolder: (e: React.MouseEvent) => void;
+    onShowStats: (e: React.MouseEvent) => void;
     isDropTarget: boolean;
     setDropTarget: (id: string | null) => void;
 }
 
-const FolderItem: React.FC<FolderItemProps> = ({ folder, routines, onEditRoutine, onDeleteRoutine, onDuplicateRoutine, onStartWorkout, onEditFolder, onDeleteFolder, isDropTarget, setDropTarget }) => {
+const FolderItem: React.FC<FolderItemProps> = ({ folder, routines, onEditRoutine, onDeleteRoutine, onDuplicateRoutine, onStartWorkout, onEditFolder, onDeleteFolder, onShowStats, isDropTarget, setDropTarget }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const { moveRoutineToFolder } = useApp();
     const dropRef = React.useRef<HTMLDivElement>(null);
@@ -418,6 +436,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ folder, routines, onEditRoutine
                     <span className="font-bold text-lg text-light-text dark:text-dark-text">{folder.name}</span>
                 </div>
                 <div className="flex items-center space-x-2">
+                    <button onClick={onShowStats} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500 dark:hover:text-blue-400"><InfoIcon className="h-5 w-5" /></button>
                     <button onClick={onEditFolder} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"><PencilIcon className="h-5 w-5" /></button>
                     <button onClick={onDeleteFolder} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
                     <ChevronRightIcon className={`h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
