@@ -472,36 +472,39 @@ const RoutineItem: React.FC<RoutineItemProps> = ({ routine, onEdit, onDelete, on
     
     return (
         <div 
-            className="bg-light-bg dark:bg-dark-bg p-3 rounded-lg flex items-start justify-between cursor-grab"
+            className="bg-light-bg dark:bg-dark-bg p-3 rounded-lg flex flex-col gap-2 cursor-grab"
             draggable="true"
             onDragStart={(e) => {
                 e.dataTransfer.setData('text/plain', routine.id);
                 e.dataTransfer.effectAllowed = "move";
             }}
         >
-            <div className="flex-grow pr-2">
-                <div className="flex items-center">
+            {/* Top row */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center flex-grow min-w-0 pr-2">
                     <span className="h-4 w-4 rounded-sm mr-4 flex-shrink-0" style={{ backgroundColor: routine.color }}></span>
-                    <span className="font-semibold text-light-text dark:text-dark-text">{routine.name}</span>
+                    <span className="font-semibold text-light-text dark:text-dark-text truncate">{routine.name}</span>
                 </div>
-                {routine.notes && (
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-2 pl-8 italic">
-                        "{routine.notes}"
-                    </p>
-                )}
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                    <button
+                        onClick={onStartWorkout}
+                        className="p-2 flex items-center justify-center text-secondary hover:text-pink-700"
+                        aria-label={`Iniciar treino ${routine.name}`}
+                    >
+                        <PlayIcon className="h-5 w-5" />
+                    </button>
+                    <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"><PencilIcon className="h-5 w-5" /></button>
+                    <button onClick={onDuplicate} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text"><CopyIcon className="h-5 w-5" /></button>
+                    <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
+                </div>
             </div>
-            <div className="flex items-center space-x-1 flex-shrink-0">
-                <button
-                    onClick={onStartWorkout}
-                    className="p-2 flex items-center justify-center text-secondary hover:text-pink-700"
-                    aria-label={`Iniciar treino ${routine.name}`}
-                >
-                    <PlayIcon className="h-5 w-5" />
-                </button>
-                <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"><PencilIcon className="h-5 w-5" /></button>
-                <button onClick={onDuplicate} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text"><CopyIcon className="h-5 w-5" /></button>
-                <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
-            </div>
+
+            {/* Notes row */}
+            {routine.notes && (
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary italic break-words">
+                    "{routine.notes}"
+                </p>
+            )}
         </div>
     );
 };

@@ -504,7 +504,7 @@ const StatsScreen: React.FC = () => {
 
     return (
         <div className="p-4 overflow-y-auto overflow-x-auto h-full">
-            <div id="pdf-capture-area" className="space-y-6">
+            <div id="pdf-capture-area" className="inline-block min-w-full space-y-6">
                 <section className="bg-light-card dark:bg-dark-card p-4 rounded-lg">
                     <h2 className="text-xl font-bold text-light-text dark:text-dark-text mb-3">Filtro de Período</h2>
                     <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">Selecione um intervalo para visualizar as estatísticas dos treinos concluídos.</p>

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Exercise, ExerciseCategory, MeasurementType, Unit, PerceivedExertionScale } from '../types';
@@ -262,8 +263,9 @@ interface ExerciseListItemProps {
 
 const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, onDelete, onShowInfo }) => {
     return (
-        <div className="bg-light-card dark:bg-dark-card p-3 rounded-lg flex items-center justify-between gap-3">
-            <div className="w-16 h-16 bg-light-bg dark:bg-dark-bg rounded-md flex-shrink-0 flex items-center justify-center">
+        <div className="bg-light-card dark:bg-dark-card p-3 rounded-lg flex gap-3">
+            {/* Image */}
+            <div className="w-16 h-16 bg-light-bg dark:bg-dark-bg rounded-md flex-shrink-0 flex items-center justify-center self-start">
                 {exercise.imageUrl ? (
                     <img
                         src={exercise.imageUrl}
@@ -276,23 +278,33 @@ const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, o
                 )}
             </div>
 
-            <div className="flex-grow pr-2 min-w-0">
-                <div className="flex items-center gap-2">
-                    <p className="font-semibold text-light-text dark:text-dark-text break-words">{exercise.name}</p>
-                    {exercise.videoUrl && <PlayIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />}
-                </div>
-                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary break-words">{exercise.primaryMuscles.join(', ')}</p>
-                {exercise.notes && (
-                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1 italic break-words">
-                        "{exercise.notes}"
-                    </p>
-                )}
-            </div>
+            {/* Content and Buttons */}
+            <div className="flex-grow min-w-0 flex flex-col">
+                {/* Top row: name, muscles, buttons */}
+                <div className="flex justify-between items-start">
+                    <div className="flex-grow pr-2 min-w-0">
+                        <div className="flex items-center gap-2">
+                            <p className="font-semibold text-light-text dark:text-dark-text break-words">{exercise.name}</p>
+                            {exercise.videoUrl && <PlayIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />}
+                        </div>
+                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary break-words">{exercise.primaryMuscles.join(', ')}</p>
+                    </div>
 
-            <div className="flex items-center space-x-1 flex-shrink-0">
-                 <button onClick={onShowInfo} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}><InfoIcon className="h-5 w-5" /></button>
-                 <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text" aria-label={`Editar ${exercise.name}`}><PencilIcon className="h-5 w-5" /></button>
-                 <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Apagar ${exercise.name}`}><TrashIcon className="h-5 w-5" /></button>
+                    <div className="flex items-center space-x-1 flex-shrink-0">
+                         <button onClick={onShowInfo} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}><InfoIcon className="h-5 w-5" /></button>
+                         <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text" aria-label={`Editar ${exercise.name}`}><PencilIcon className="h-5 w-5" /></button>
+                         <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Apagar ${exercise.name}`}><TrashIcon className="h-5 w-5" /></button>
+                    </div>
+                </div>
+                
+                {/* Bottom row: Notes */}
+                {exercise.notes && (
+                    <div className="mt-2">
+                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary italic break-words">
+                            "{exercise.notes}"
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );
