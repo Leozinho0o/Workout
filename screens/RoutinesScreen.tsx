@@ -283,29 +283,27 @@ const RoutinesScreen = () => {
             </div>
 
             {/* FAB and Add Options for Mobile */}
-            <div className="fixed inset-0 z-20 pointer-events-none lg:hidden" ref={addOptionsRef}>
-                <div className="max-w-md mx-auto relative h-full">
-                    <div className="absolute bottom-24 right-6 pointer-events-auto">
-                        {isAddOptionsOpen && (
-                            <div className="flex flex-col items-end mb-2">
-                                <button onClick={handleOpenAddRoutine} className="flex items-center bg-light-card dark:bg-dark-card p-3 rounded-lg shadow-lg mb-2 w-max">
-                                    <span className="text-light-text dark:text-dark-text mr-2">Nova Rotina</span>
-                                    <div className="h-4 w-4 rounded-sm bg-secondary"></div>
-                                </button>
-                                <button onClick={handleOpenAddFolder} className="flex items-center bg-light-card dark:bg-dark-card p-3 rounded-lg shadow-lg w-max">
-                                    <span className="text-light-text dark:text-dark-text mr-2">Nova Pasta</span>
-                                    <FolderIcon className="h-5 w-5 text-yellow-400" />
-                                </button>
-                            </div>
-                        )}
-                        <button
-                            onClick={() => setIsAddOptionsOpen(prev => !prev)}
-                            className="bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
-                            aria-label="Adicionar item"
-                        >
-                            <PlusIcon className={`h-8 w-8 transition-transform duration-200 ${isAddOptionsOpen ? 'rotate-45' : ''}`} />
-                        </button>
-                    </div>
+            <div className="fixed bottom-24 right-6 z-20 lg:hidden" ref={addOptionsRef}>
+                <div className="flex flex-col items-end">
+                    {isAddOptionsOpen && (
+                        <div className="flex flex-col items-end mb-2">
+                            <button onClick={handleOpenAddRoutine} className="flex items-center bg-light-card dark:bg-dark-card p-3 rounded-lg shadow-lg mb-2 w-max">
+                                <span className="text-light-text dark:text-dark-text mr-2">Nova Rotina</span>
+                                <div className="h-4 w-4 rounded-sm bg-secondary"></div>
+                            </button>
+                            <button onClick={handleOpenAddFolder} className="flex items-center bg-light-card dark:bg-dark-card p-3 rounded-lg shadow-lg w-max">
+                                <span className="text-light-text dark:text-dark-text mr-2">Nova Pasta</span>
+                                <FolderIcon className="h-5 w-5 text-yellow-400" />
+                            </button>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setIsAddOptionsOpen(prev => !prev)}
+                        className="bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+                        aria-label="Adicionar item"
+                    >
+                        <PlusIcon className={`h-8 w-8 transition-transform duration-200 ${isAddOptionsOpen ? 'rotate-45' : ''}`} />
+                    </button>
                 </div>
             </div>
             

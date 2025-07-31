@@ -213,17 +213,13 @@ const ExercisesScreen: React.FC = () => {
                 )}
             </div>
 
-            <div className="fixed inset-0 z-20 pointer-events-none lg:hidden">
-                <div className="max-w-md mx-auto relative h-full">
-                    <button
-                        onClick={openAddModal}
-                        className="absolute bottom-24 right-6 bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg pointer-events-auto flex items-center justify-center"
-                        aria-label="Adicionar novo exercício"
-                    >
-                        <PlusIcon className="h-8 w-8" />
-                    </button>
-                </div>
-            </div>
+            <button
+                onClick={openAddModal}
+                className="fixed bottom-24 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+                aria-label="Adicionar novo exercício"
+            >
+                <PlusIcon className="h-8 w-8" />
+            </button>
 
             {isModalOpen && (
                 <ExerciseFormModal
