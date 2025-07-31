@@ -102,7 +102,7 @@ const ExercisesScreen: React.FC = () => {
 
     return (
         <div className="relative h-full">
-            <div className="p-4 lg:p-6 space-y-6 pb-40">
+            <div className="p-4 lg:p-6 space-y-6 pb-44">
                 {/* --- Search and Filter UI --- */}
                 <div className="space-y-4">
                     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
@@ -136,15 +136,15 @@ const ExercisesScreen: React.FC = () => {
                         {/* Category Filter */}
                         <div className="flex-grow">
                              <label className="block text-sm font-medium mb-1 text-light-text dark:text-dark-text">Categoria</label>
-                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                             <div className="flex space-x-1 rounded-lg bg-light-bg dark:bg-dark-card p-1">
                                 {categoryFilterOptions.map(option => (
                                     <button
                                         key={option.label}
                                         onClick={() => setCategoryFilter(option.value)}
-                                        className={`flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors text-center break-words ${
+                                        className={`flex-1 flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors ${
                                             categoryFilter === option.value
                                                 ? 'bg-primary text-white shadow'
-                                                : 'text-light-text-secondary dark:text-dark-text-secondary bg-light-card dark:bg-dark-card hover:bg-light-bg dark:hover:bg-dark-border'
+                                                : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-card dark:hover:bg-dark-border'
                                         }`}
                                     >
                                         {option.label}
@@ -214,7 +214,7 @@ const ExercisesScreen: React.FC = () => {
 
             <button
                 onClick={openAddModal}
-                className="fixed bottom-36 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+                className="fixed bottom-24 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
                 aria-label="Adicionar novo exercício"
             >
                 <PlusIcon className="h-8 w-8" />
