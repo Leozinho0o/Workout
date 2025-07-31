@@ -214,7 +214,7 @@ const ExercisesScreen: React.FC = () => {
 
             <button
                 onClick={openAddModal}
-                className="fixed bottom-32 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+                className="fixed bottom-36 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
                 aria-label="Adicionar novo exercício"
             >
                 <PlusIcon className="h-8 w-8" />
