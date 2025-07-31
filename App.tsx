@@ -304,7 +304,7 @@ const App: React.FC = () => {
                         </header>
                     )}
                     
-                    <main className="flex-grow overflow-x-hidden bg-light-bg dark:bg-dark-bg">
+                    <main className="flex-grow overflow-y-auto overflow-x-hidden bg-light-bg dark:bg-dark-bg">
                         {renderContent()}
                     </main>
 

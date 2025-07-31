@@ -160,11 +160,11 @@ const RoutinesScreen = () => {
 
     return (
         <div 
-            className="relative h-full overflow-y-auto"
+            className="relative h-full"
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDropOnRoot}
         >
-            <div className="p-4 lg:p-6 space-y-4 pb-44">
+            <div className="p-4 lg:p-6 space-y-4 pb-40">
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                     <div className="relative flex-grow">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -282,7 +282,7 @@ const RoutinesScreen = () => {
             </div>
 
             {/* FAB and Add Options for Mobile */}
-            <div className="fixed bottom-24 right-6 z-20 lg:hidden" ref={addOptionsRef}>
+            <div className="fixed bottom-36 right-6 z-20 lg:hidden" ref={addOptionsRef}>
                 <div className="flex flex-col items-end">
                     {isAddOptionsOpen && (
                         <div className="flex flex-col items-end mb-2">
