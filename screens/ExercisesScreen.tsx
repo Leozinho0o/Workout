@@ -277,12 +277,12 @@ const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, o
 
             <div className="flex-grow pr-2 min-w-0">
                 <div className="flex items-center gap-2">
-                    <p className="font-semibold text-light-text dark:text-dark-text truncate">{exercise.name}</p>
+                    <p className="font-semibold text-light-text dark:text-dark-text break-words">{exercise.name}</p>
                     {exercise.videoUrl && <PlayIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />}
                 </div>
-                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">{exercise.primaryMuscles.join(', ')}</p>
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary break-words">{exercise.primaryMuscles.join(', ')}</p>
                 {exercise.notes && (
-                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1 italic truncate">
+                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1 italic break-words">
                         "{exercise.notes}"
                     </p>
                 )}
