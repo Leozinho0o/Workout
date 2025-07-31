@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Exercise, ExerciseCategory, MeasurementType, Unit, PerceivedExertionScale } from '../types';
@@ -101,7 +102,7 @@ const ExercisesScreen: React.FC = () => {
     ];
 
     return (
-        <div className="relative h-full">
+        <div className="relative">
             <div className="p-4 lg:p-6 space-y-6 pb-44">
                 {/* --- Search and Filter UI --- */}
                 <div className="space-y-4">
