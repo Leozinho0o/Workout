@@ -136,15 +136,15 @@ const ExercisesScreen: React.FC = () => {
                         {/* Category Filter */}
                         <div className="flex-grow">
                              <label className="block text-sm font-medium mb-1 text-light-text dark:text-dark-text">Categoria</label>
-                             <div className="flex space-x-1 rounded-lg bg-light-bg dark:bg-dark-card p-1">
+                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {categoryFilterOptions.map(option => (
                                     <button
                                         key={option.label}
                                         onClick={() => setCategoryFilter(option.value)}
-                                        className={`flex-1 flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors ${
+                                        className={`flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors text-center break-words ${
                                             categoryFilter === option.value
                                                 ? 'bg-primary text-white shadow'
-                                                : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-card dark:hover:bg-dark-border'
+                                                : 'text-light-text-secondary dark:text-dark-text-secondary bg-light-card dark:bg-dark-card hover:bg-light-bg dark:hover:bg-dark-border'
                                         }`}
                                     >
                                         {option.label}
