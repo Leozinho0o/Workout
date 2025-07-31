@@ -96,14 +96,14 @@ export const HorizontalBarChart: React.FC<{ data: ChartData[]; unit: string }> =
                     <div className="w-2/5 text-right text-light-text dark:text-dark-text pr-2 font-medium break-words" title={item.label}>
                         {item.label}
                     </div>
-                    <div className="w-3/5 flex items-center">
-                        <div className="w-full bg-light-bg dark:bg-dark-bg rounded-full h-5 relative">
+                    <div className="w-3/5 flex items-center gap-3">
+                        <div className="flex-grow bg-light-bg dark:bg-dark-bg rounded-full h-5 relative">
                            <div 
                                 className="absolute top-0 left-0 h-5 bg-primary rounded-full transition-all duration-500 ease-out"
                                 style={{ width: `${(item.value / maxValue) * 100}%` }}
                             />
                         </div>
-                        <span className="ml-3 w-10 text-left font-semibold text-light-text-secondary dark:text-dark-text-secondary">{item.value}</span>
+                        <span className="w-10 flex-shrink-0 text-left font-semibold text-light-text-secondary dark:text-dark-text-secondary">{item.value}</span>
                     </div>
                 </div>
             ))}

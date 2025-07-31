@@ -142,7 +142,7 @@ const ExercisesScreen: React.FC = () => {
                                     <button
                                         key={option.label}
                                         onClick={() => setCategoryFilter(option.value)}
-                                        className={`w-full flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors ${
+                                        className={`flex-1 flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors ${
                                             categoryFilter === option.value
                                                 ? 'bg-primary text-white shadow'
                                                 : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-card dark:hover:bg-dark-border'
@@ -174,7 +174,7 @@ const ExercisesScreen: React.FC = () => {
                                                 onChange={() => handleMuscleFilterToggle(muscle)}
                                                 className="h-4 w-4 rounded text-secondary bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-secondary mr-3"
                                             />
-                                            <span className="text-light-text dark:text-dark-text">{muscle}</span>
+                                            <span className="text-light-text dark:text-dark-text truncate">{muscle}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -215,7 +215,7 @@ const ExercisesScreen: React.FC = () => {
 
             <button
                 onClick={openAddModal}
-                className="fixed bottom-24 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+                className="fixed bottom-28 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
                 aria-label="Adicionar novo exercício"
             >
                 <PlusIcon className="h-8 w-8" />
