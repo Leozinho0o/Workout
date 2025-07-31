@@ -103,10 +103,10 @@ const ExercisesScreen: React.FC = () => {
 
     return (
         <div className="relative h-full overflow-y-auto overflow-x-auto">
-            <div className="p-4 lg:p-6 space-y-6 pb-40">
+            <div className="p-4 xl:p-6 space-y-6 pb-40">
                 {/* --- Search and Filter UI --- */}
                 <div className="space-y-4">
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                    <div className="flex flex-col xl:flex-row xl:justify-between xl:items-start gap-4">
                         {/* Search */}
                         <div className="relative flex-grow">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -124,7 +124,7 @@ const ExercisesScreen: React.FC = () => {
                          {/* Desktop Add Button */}
                         <button
                             onClick={openAddModal}
-                            className="hidden lg:flex bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg items-center flex-shrink-0 h-[42px]"
+                            className="hidden xl:flex bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg items-center flex-shrink-0 h-[42px]"
                             aria-label="Adicionar novo exercício"
                         >
                             <PlusIcon className="h-5 w-5 mr-2" />
@@ -215,7 +215,7 @@ const ExercisesScreen: React.FC = () => {
 
             <button
                 onClick={openAddModal}
-                className="fixed bottom-36 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+                className="fixed bottom-36 right-6 z-20 xl:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
                 aria-label="Adicionar novo exercício"
             >
                 <PlusIcon className="h-8 w-8" />
@@ -409,203 +409,116 @@ const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({ onClose, onSave, 
                     <h3 className="text-xl font-bold">{exerciseToEdit ? 'Editar Exercício' : 'Novo Exercício'}</h3>
                     <button type="button" onClick={onClose} className="p-1 rounded-full flex items-center justify-center hover:bg-light-bg dark:hover:bg-dark-bg"><XIcon className="h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary" /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-2">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium mb-1">Nome do Exercício</label>
-                        <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2" />
-                    </div>
-                    
-                    <div>
-                        <label htmlFor="exerciseNotes" className="block text-sm font-medium mb-1">Anotações (Opcional)</label>
-                        <textarea
-                            id="exerciseNotes"
-                            value={notes}
-                            onChange={e => setNotes(e.target.value)}
-                            rows={2}
-                            placeholder="Ex: Focar na contração do músculo, manter a postura..."
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-sm"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="category" className="block text-sm font-medium mb-1">Categoria</label>
-                        <select id="category" value={category} onChange={e => setCategory(e.target.value as ExerciseCategory)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                           {Object.values(ExerciseCategory).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Músculos Primários</label>
-                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mb-2">Selecione um ou mais. Músculos selecionados aqui não aparecerão como secundários.</p>
-                        <div className="w-full h-32 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 overflow-y-auto">
-                            {muscleGroups.map((group: string) => (
-                                <div key={group} className="flex items-center p-1 rounded">
-                                    <input
-                                        type="checkbox"
-                                        id={`pm-${group}`}
-                                        checked={primaryMuscles.includes(group)}
-                                        onChange={() => handlePrimaryMuscleToggle(group)}
-                                        className="h-4 w-4 rounded text-secondary bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-secondary mr-3"
-                                    />
-                                    <label htmlFor={`pm-${group}`} className="flex-1 cursor-pointer">{group}</label>
-                                </div>
-                            ))}
+                <form onSubmit={handleSubmit} className="flex-grow flex flex-col overflow-hidden">
+                    <div className="overflow-y-auto pr-2 space-y-4">
+                        <div>
+                            <label htmlFor="name" className="block text-sm font-medium mb-1">Nome do Exercício</label>
+                            <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2" />
                         </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Músculos Secundários (Opcional)</label>
-                        <div className="w-full h-32 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 overflow-y-auto">
-                            {muscleGroups
-                                .filter((g: string) => !primaryMuscles.includes(g))
-                                .map((group: string) => (
-                                    <div key={group} className="flex items-center p-1 rounded">
-                                        <input
-                                            type="checkbox"
-                                            id={`sm-${group}`}
-                                            checked={secondaryMuscles.includes(group)}
-                                            onChange={() => handleSecondaryMuscleToggle(group)}
-                                            className="h-4 w-4 rounded text-secondary bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-secondary mr-3"
-                                        />
-                                        <label htmlFor={`sm-${group}`} className="flex-1 cursor-pointer">
-                                            {group}
-                                        </label>
-                                    </div>
-                                ))}
-                        </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                        <input type="text" value={newMuscle} onChange={e => setNewMuscle(e.target.value)} placeholder="Adicionar novo grupo muscular" className="flex-grow bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2" />
-                        <button type="button" onClick={handleAddMuscle} className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-md">Adicionar</button>
-                    </div>
-                    
-                    <hr className="border-light-border dark:border-dark-border" />
-
-                    <h4 className="text-lg font-semibold">Recursos Visuais (Opcional)</h4>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Imagem</label>
-                        {imageUrl && imageUrl.startsWith('data:image') ? (
-                            <div className="mt-2 p-3 bg-light-bg dark:bg-dark-bg rounded-lg">
-                                <p className="text-sm text-green-600 dark:text-green-400">✓ Imagem carregada do dispositivo.</p>
-                                <button 
-                                    type="button" 
-                                    onClick={() => setImageUrl('')} 
-                                    className="mt-1 text-sm text-red-600 dark:text-red-500 hover:underline"
-                                >
-                                    Remover
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                <div>
-                                    <label htmlFor="imageUrl" className="block text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">URL da Imagem</label>
-                                    <input 
-                                        type="url" 
-                                        id="imageUrl" 
-                                        value={imageUrl} 
-                                        onChange={e => setImageUrl(e.target.value)} 
-                                        placeholder="https://exemplo.com/imagem.jpg"
-                                        className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <hr className="flex-grow border-light-border dark:border-dark-border"/>
-                                    <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">OU</span>
-                                    <hr className="flex-grow border-light-border dark:border-dark-border"/>
-                                </div>
-                                <input
-                                    type="file"
-                                    id="imageUpload"
-                                    ref={fileInputRef}
-                                    onChange={handleFileChange}
-                                    accept="image/png, image/jpeg, image/gif, image/webp"
-                                    className="hidden"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md text-sm"
-                                >
-                                    Carregar do Dispositivo
-                                </button>
-                            </div>
-                        )}
                         
-                        {imageUrl && (
-                            <div className="mt-2 rounded-lg overflow-hidden bg-light-bg dark:bg-dark-bg flex justify-center items-center p-2">
-                                <img 
-                                    src={imageUrl} 
-                                    alt="Pré-visualização" 
-                                    className="max-h-48 w-auto object-contain rounded-md"
-                                />
+                        <div>
+                            <label htmlFor="exerciseNotes" className="block text-sm font-medium mb-1">Anotações (Opcional)</label>
+                            <textarea
+                                id="exerciseNotes"
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)}
+                                rows={2}
+                                placeholder="Ex: Focar na contração do músculo, manter a postura..."
+                                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
+                            ></textarea>
+                        </div>
+                        
+                        <div>
+                            <label htmlFor="category" className="block text-sm font-medium mb-1">Categoria</label>
+                            <select id="category" value={category} onChange={e => setCategory(e.target.value as ExerciseCategory)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
+                                {Object.values(ExerciseCategory).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="measurementType" className="block text-sm font-medium mb-1">Tipo de Medida</label>
+                                <select id="measurementType" value={measurementType} onChange={e => setMeasurementType(e.target.value as MeasurementType)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
+                                    {Object.values(MeasurementType).map(type => <option key={type} value={type}>{type}</option>)}
+                                </select>
                             </div>
-                        )}
-                    </div>
-
-                    <div>
-                        <label htmlFor="videoUrl" className="block text-sm font-medium mb-1">URL do Vídeo (YouTube, etc.)</label>
-                        <input 
-                            type="url" 
-                            id="videoUrl" 
-                            value={videoUrl} 
-                            onChange={e => setVideoUrl(e.target.value)} 
-                            placeholder="https://youtube.com/watch?v=..."
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
-                        />
-                        {youtubeId && (
-                            <div className="mt-2 aspect-video">
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    src={`https://www.youtube.com/embed/${youtubeId}`}
-                                    title="YouTube video player"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                    className="rounded-lg"
-                                ></iframe>
+                            <div>
+                                <label htmlFor="unit" className="block text-sm font-medium mb-1">Unidade</label>
+                                <select id="unit" value={unit} onChange={e => setUnit(e.target.value as Unit)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
+                                    {Object.values(Unit).map(u => <option key={u} value={u}>{u}</option>)}
+                                </select>
                             </div>
-                        )}
-                    </div>
-                    
-                    <hr className="border-light-border dark:border-dark-border" />
-                    
-                    <h4 className="text-lg font-semibold">Medição Padrão</h4>
+                        </div>
+                        
+                        <div>
+                            <label htmlFor="perceivedExertionScale" className="block text-sm font-medium mb-1">Escala de Esforço (Opcional)</label>
+                            <select id="perceivedExertionScale" value={perceivedExertionScale || ''} onChange={e => setPerceivedExertionScale(e.target.value as PerceivedExertionScale || undefined)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
+                                <option value="">Nenhuma</option>
+                                {Object.values(PerceivedExertionScale).map(scale => <option key={scale} value={scale}>{scale}</option>)}
+                            </select>
+                        </div>
 
-                     <div>
-                        <label htmlFor="measurementType" className="block text-sm font-medium mb-1">Medido por</label>
-                        <select id="measurementType" value={measurementType} onChange={e => setMeasurementType(e.target.value as MeasurementType)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                           {Object.values(MeasurementType).map(type => <option key={type} value={type}>{type === MeasurementType.COUNT ? 'Repetições' : 'Tempo'}</option>)}
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label htmlFor="unit" className="block text-sm font-medium mb-1">Unidade de Medida</label>
-                        <select id="unit" value={unit} onChange={e => setUnit(e.target.value as Unit)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                           {Object.values(Unit).map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">Ex: KG para Repetições, Distância (m) para Tempo.</p>
-                    </div>
+                        <hr className="border-light-border dark:border-dark-border" />
+                        
+                        {/* Muscle Selection */}
+                        <div>
+                            <p className="block text-sm font-medium mb-2">Músculos Primários</p>
+                            <div className="max-h-32 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2 p-1 bg-light-bg dark:bg-dark-bg rounded-md">
+                                {muscleGroups.map(muscle => (
+                                    <button type="button" key={muscle} onClick={() => handlePrimaryMuscleToggle(muscle)} className={`p-2 text-sm rounded-md border text-left truncate transition-colors ${primaryMuscles.includes(muscle) ? 'bg-primary text-white border-primary' : 'bg-transparent border-light-border dark:border-dark-border hover:bg-light-card dark:hover:bg-dark-card'}`}>
+                                        {muscle}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p className="block text-sm font-medium mb-2">Músculos Secundários</p>
+                            <div className="max-h-32 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2 p-1 bg-light-bg dark:bg-dark-bg rounded-md">
+                                {muscleGroups.filter(m => !primaryMuscles.includes(m)).map(muscle => (
+                                    <button type="button" key={muscle} onClick={() => handleSecondaryMuscleToggle(muscle)} className={`p-2 text-sm rounded-md border text-left truncate transition-colors ${secondaryMuscles.includes(muscle) ? 'bg-secondary text-white border-secondary' : 'bg-transparent border-light-border dark:border-dark-border hover:bg-light-card dark:hover:bg-dark-card'}`}>
+                                        {muscle}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                    <div>
-                        <label htmlFor="perceivedExertionScale" className="block text-sm font-medium mb-1">Escala de Percepção de Esforço (Opcional)</label>
-                        <select 
-                            id="perceivedExertionScale" 
-                            value={perceivedExertionScale || ''} 
-                            onChange={e => setPerceivedExertionScale(e.target.value ? e.target.value as PerceivedExertionScale : undefined)} 
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
-                        >
-                            <option value="">Nenhuma</option>
-                            <option value={PerceivedExertionScale.PERFLEX}>PERFLEX (indicada para exercícios de flexibilidade)</option>
-                            <option value={PerceivedExertionScale.RIR}>PSE baseada em repetições em reserva (indicada para exercícios resistidos)</option>
-                            <option value={PerceivedExertionScale.PSE}>PSE (indicada para exercícios cardiovasculares)</option>
-                        </select>
-                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">Define a escala para medir a intensidade subjetiva do exercício.</p>
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Adicionar Novo Grupo Muscular</label>
+                            <div className="flex space-x-2">
+                                <input type="text" value={newMuscle} onChange={e => setNewMuscle(e.target.value)} placeholder="Ex: Rombóides" className="flex-grow bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2" />
+                                <button type="button" onClick={handleAddMuscle} className="bg-primary hover:bg-primary-dark text-white font-bold p-2 rounded-md flex items-center justify-center">
+                                    <PlusIcon className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <hr className="border-light-border dark:border-dark-border" />
 
-                    <div className="pt-2 flex justify-end items-center space-x-3 flex-shrink-0">
+                        {/* Image and Video */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                            <div className="space-y-2">
+                                <label htmlFor="imageUrl" className="block text-sm font-medium">URL da Imagem (Opcional)</label>
+                                <div className="flex items-center space-x-2">
+                                    <input type="text" id="imageUrl" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." className="flex-grow bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2" />
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"><ImageIcon className="h-5 w-5"/></button>
+                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                                </div>
+                                <label htmlFor="videoUrl" className="block text-sm font-medium">URL do Vídeo (YouTube, Opcional)</label>
+                                <input type="text" id="videoUrl" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2" />
+                            </div>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-24 h-24 bg-light-bg dark:bg-dark-bg rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    {imageUrl ? <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" /> : <ImageIcon className="h-8 w-8 text-light-text-secondary" />}
+                                </div>
+                                <div className="w-24 h-24 bg-light-bg dark:bg-dark-bg rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    {youtubeId ? <img src={`https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`} alt="Video Thumbnail" className="w-full h-full object-cover" /> : <PlayIcon className="h-8 w-8 text-light-text-secondary" />}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Footer with buttons */}
+                    <div className="pt-4 flex justify-end items-center space-x-3 flex-shrink-0">
                         <button type="button" onClick={onClose} className="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-md">Cancelar</button>
                         <button type="submit" className="bg-secondary hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-md">Salvar</button>
                     </div>

@@ -146,7 +146,7 @@ const CalendarScreen: React.FC = () => {
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     return (
-        <div className="px-2 lg:px-4 py-4 flex flex-col h-full text-light-text dark:text-dark-text">
+        <div className="px-2 xl:px-4 py-4 flex flex-col h-full text-light-text dark:text-dark-text">
             <header className="flex items-center justify-between mb-4">
                 <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-light-card dark:hover:bg-dark-card flex items-center justify-center"><ChevronLeftIcon className="h-6 w-6" /></button>
                 <h2 className="text-lg font-bold capitalize">{formatDate(currentDate)}</h2>
@@ -162,7 +162,7 @@ const CalendarScreen: React.FC = () => {
 
                     return (
                         <div key={index} 
-                             className={`relative p-1 border border-light-border dark:border-dark-border rounded-md min-h-[8rem] lg:min-h-[10rem] flex flex-col transition-colors duration-200 ${day ? 'hover:bg-light-card dark:hover:bg-dark-card cursor-pointer' : 'bg-transparent border-transparent'} ${isDropTarget ? 'bg-primary/20 border-primary' : ''}`}
+                             className={`relative p-1 border border-light-border dark:border-dark-border rounded-md min-h-[8rem] xl:min-h-[10rem] flex flex-col transition-colors duration-200 ${day ? 'hover:bg-light-card dark:hover:bg-dark-card cursor-pointer' : 'bg-transparent border-transparent'} ${isDropTarget ? 'bg-primary/20 border-primary' : ''}`}
                              onClick={() => day && handleDayClick(day)}
                              onDragOver={(e) => {
                                  e.preventDefault();

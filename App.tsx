@@ -293,13 +293,13 @@ const App: React.FC = () => {
             <div className="h-full w-full bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text flex font-sans safe-left-padding safe-right-padding">
                 {!activeWorkoutSession && <Sidebar activeView={activeView} setActiveView={handleNavClick} />}
                 
-                <div className="flex-1 flex flex-col h-full max-w-xl mx-auto lg:max-w-none lg:mx-0 shadow-2xl lg:shadow-none">
+                <div className="flex-1 flex flex-col h-full w-full max-w-full md:max-w-5xl mx-auto xl:max-w-none xl:mx-0 shadow-2xl xl:shadow-none">
                     {!activeWorkoutSession && (
-                        <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4 lg:px-6 border-b border-light-border dark:border-dark-border safe-top-padding">
+                        <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4 xl:px-6 border-b border-light-border dark:border-dark-border safe-top-padding">
                             <h1 className="text-xl font-bold text-light-text dark:text-dark-text">
                                 {activeView}
                             </h1>
-                            <button onClick={() => setActiveView(View.SETTINGS)} className="p-2 flex items-center justify-center lg:hidden">
+                            <button onClick={() => setActiveView(View.SETTINGS)} className="p-2 flex items-center justify-center xl:hidden">
                                 <SettingsIcon className={`h-6 w-6 ${activeView === View.SETTINGS ? 'text-secondary' : 'text-light-text-secondary dark:text-dark-text-secondary'}`} />
                             </button>
                         </header>
@@ -310,7 +310,7 @@ const App: React.FC = () => {
                     </main>
 
                     {!activeWorkoutSession && (
-                        <nav className="flex-shrink-0 bg-light-card dark:bg-dark-card h-20 flex justify-around items-center border-t border-light-border dark:border-dark-border lg:hidden safe-bottom-padding">
+                        <nav className="flex-shrink-0 bg-light-card dark:bg-dark-card h-20 flex justify-around items-center border-t border-light-border dark:border-dark-border xl:hidden safe-bottom-padding">
                             <NavItem icon={<RepeatIcon className="h-6 w-6" />} label={View.ROUTINES} activeView={activeView} onClick={handleNavClick} />
                             <NavItem icon={<DumbbellIcon className="h-6 w-6" />} label={View.EXERCISES} activeView={activeView} onClick={handleNavClick} />
                             <NavItem icon={<CalendarIcon className="h-6 w-6" />} label={View.CALENDAR} activeView={activeView} onClick={handleNavClick} />
