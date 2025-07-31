@@ -137,7 +137,7 @@ const ExercisesScreen: React.FC = () => {
                         {/* Category Filter */}
                         <div className="flex-grow min-w-0">
                              <label className="block text-sm font-medium mb-1 text-light-text dark:text-dark-text">Categoria</label>
-                             <div className="flex space-x-1 rounded-lg bg-light-bg dark:bg-dark-card p-1 overflow-x-auto">
+                             <div className="flex space-x-1 rounded-lg bg-light-bg dark:bg-dark-card p-1">
                                 {categoryFilterOptions.map(option => (
                                     <button
                                         key={option.label}
