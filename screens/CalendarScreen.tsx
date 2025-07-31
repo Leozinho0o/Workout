@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useCallback, Fragment } from 'react';
 import { useApp } from '../App';
 import { WorkoutSession, Routine, Folder, PlannedExercise, Unit, Exercise, WorkoutSet } from '../types';
@@ -147,7 +146,7 @@ const CalendarScreen: React.FC = () => {
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     return (
-        <div className="px-2 lg:px-4 py-4 flex flex-col h-full text-light-text dark:text-dark-text overflow-y-auto overflow-x-auto">
+        <div className="px-2 lg:px-4 py-4 flex flex-col h-full text-light-text dark:text-dark-text">
             <header className="flex items-center justify-between mb-4">
                 <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-light-card dark:hover:bg-dark-card flex items-center justify-center"><ChevronLeftIcon className="h-6 w-6" /></button>
                 <h2 className="text-lg font-bold capitalize">{formatDate(currentDate)}</h2>
