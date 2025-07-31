@@ -383,8 +383,9 @@ const StatsScreen: React.FC = () => {
                         const timeInSeconds = set.time ?? 0;
                         const timeInMinutes = timeInSeconds / 60;
                         const effortValue = parseEffortToNumber(set.effort);
+                        const value = set.value ?? 0; // Speed or distance
                         if (timeInMinutes > 0 && effortValue > 0) {
-                            routineCardioInternalLoad += timeInMinutes * effortValue;
+                            routineCardioInternalLoad += timeInMinutes * value * effortValue;
                         }
                     });
                 }
@@ -590,12 +591,12 @@ const StatsScreen: React.FC = () => {
                             <div className="pt-4 space-y-12">
                                 <div className="pl-8">
                                     <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-1">Carga Externa (Kg)</h3>
-                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: (séries x repetições x carga)</p>
+                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: Soma de (repetições x carga) para todas as séries.</p>
                                     <BarChart data={dailyVolumeData} isStacked={true} unit="Kg" />
                                 </div>
                                 <div className="pl-8">
                                     <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-1">Carga Interna (UA)</h3>
-                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: (séries x repetições x carga x esforço)</p>
+                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: Soma de (repetições x carga x esforço) para todas as séries.</p>
                                     <BarChart data={dailyInternalLoadData} isStacked={true} unit="UA" />
                                 </div>
                                 <div>
@@ -624,12 +625,12 @@ const StatsScreen: React.FC = () => {
                             <div className="pl-8 pt-4 space-y-12">
                                 <div>
                                     <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-1">Carga Externa</h3>
-                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: (tempo em minutos x (velocidade ou distância))</p>
+                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: Soma de (tempo em min x (velocidade ou distância)) para todas as séries.</p>
                                     <BarChart data={dailyCardioLoadData} isStacked={true} unit="UA" />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-1">Carga Interna (UA)</h3>
-                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: (tempo em minutos x esforço)</p>
+                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: Soma de (tempo em min x (velocidade ou distância) x PSE) para todas as séries.</p>
                                     <BarChart data={dailyCardioInternalLoadData} isStacked={true} unit="UA" />
                                 </div>
                             </div>
@@ -652,7 +653,7 @@ const StatsScreen: React.FC = () => {
                             <div className="pt-4 space-y-12">
                                 <div className="pl-8">
                                     <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-1">Carga Interna</h3>
-                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: ((tempo em min) ou repetições) x esforço</p>
+                                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-2">Cálculo: Soma de ((tempo em min ou repetições) x esforço) para todas as séries.</p>
                                     <BarChart data={dailyFlexibilityLoadData} isStacked={true} unit="UA" />
                                 </div>
                                 <div>

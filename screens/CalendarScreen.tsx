@@ -162,7 +162,7 @@ const CalendarScreen: React.FC = () => {
 
                     return (
                         <div key={index} 
-                             className={`relative p-1 border border-light-border dark:border-dark-border rounded-md h-32 lg:h-40 flex flex-col transition-colors duration-200 ${day ? 'hover:bg-light-card dark:hover:bg-dark-card cursor-pointer' : 'bg-transparent border-transparent'} ${isDropTarget ? 'bg-primary/20 border-primary' : ''}`}
+                             className={`relative p-1 border border-light-border dark:border-dark-border rounded-md min-h-[8rem] lg:min-h-[10rem] flex flex-col transition-colors duration-200 ${day ? 'hover:bg-light-card dark:hover:bg-dark-card cursor-pointer' : 'bg-transparent border-transparent'} ${isDropTarget ? 'bg-primary/20 border-primary' : ''}`}
                              onClick={() => day && handleDayClick(day)}
                              onDragOver={(e) => {
                                  e.preventDefault();
@@ -176,7 +176,7 @@ const CalendarScreen: React.FC = () => {
                                     <span className={`text-xs ${isSameDay(day, today) ? 'bg-secondary text-white rounded-full h-5 w-5 flex items-center justify-center font-bold' : ''} ${day.getMonth() !== currentDate.getMonth() ? 'text-gray-400 dark:text-gray-600' : ''}`}>
                                         {day.getDate()}
                                     </span>
-                                    <div className="mt-1 space-y-1 overflow-y-auto">
+                                    <div className="mt-1 space-y-1">
                                         {workoutsByDate.get(dayString)?.map(workout => {
                                             const routine = routines.find((r: Routine) => r.id === workout.routineId);
                                             const textColorClass = getContrastYIQ(routine?.color);
@@ -194,9 +194,9 @@ const CalendarScreen: React.FC = () => {
                                                          setDraggingWorkoutId(null);
                                                          setDropTargetDate(null);
                                                      }}
-                                                     className={`text-sm p-1 rounded flex items-center cursor-grab transition-opacity ${textColorClass} ${draggingWorkoutId === workout.id ? 'opacity-50' : workout.completed ? 'opacity-60' : ''}`}
+                                                     className={`text-sm p-1 rounded flex items-start cursor-grab transition-opacity ${textColorClass} ${draggingWorkoutId === workout.id ? 'opacity-50' : workout.completed ? 'opacity-60' : ''}`}
                                                      style={{ backgroundColor: routine?.color }}>
-                                                     <span className="font-bold truncate w-full">{routine?.name}</span>
+                                                     <span className="font-bold w-full break-words">{routine?.name}</span>
                                                 </div>
                                             );
                                         })}

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Exercise, Routine, Folder, WorkoutSession, Theme } from './types';
 import { INITIAL_EXERCISES, INITIAL_ROUTINES, INITIAL_FOLDERS, DEFAULT_MUSCLE_GROUPS } from './constants';
@@ -290,12 +291,12 @@ const App: React.FC = () => {
 
     return (
         <AppContext.Provider value={contextValue}>
-            <div className="h-screen w-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text flex font-sans">
+            <div className="h-screen w-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text flex font-sans safe-left-padding safe-right-padding">
                 {!activeWorkoutSession && <Sidebar activeView={activeView} setActiveView={handleNavClick} />}
                 
-                <div className="flex-1 flex flex-col h-screen max-w-xl mx-auto lg:max-w-none lg:mx-0 shadow-2xl lg:shadow-none">
+                <div className="flex-1 flex flex-col h-full max-w-xl mx-auto lg:max-w-none lg:mx-0 shadow-2xl lg:shadow-none">
                     {!activeWorkoutSession && (
-                        <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4 lg:px-6 border-b border-light-border dark:border-dark-border">
+                        <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4 lg:px-6 border-b border-light-border dark:border-dark-border safe-top-padding">
                             <h1 className="text-xl font-bold text-light-text dark:text-dark-text">
                                 {activeView}
                             </h1>
@@ -310,7 +311,7 @@ const App: React.FC = () => {
                     </main>
 
                     {!activeWorkoutSession && (
-                        <nav className="flex-shrink-0 bg-light-card dark:bg-dark-card h-20 flex justify-around items-center border-t border-light-border dark:border-dark-border lg:hidden">
+                        <nav className="flex-shrink-0 bg-light-card dark:bg-dark-card h-20 flex justify-around items-center border-t border-light-border dark:border-dark-border lg:hidden safe-bottom-padding">
                             <NavItem icon={<RepeatIcon className="h-6 w-6" />} label={View.ROUTINES} activeView={activeView} onClick={handleNavClick} />
                             <NavItem icon={<DumbbellIcon className="h-6 w-6" />} label={View.EXERCISES} activeView={activeView} onClick={handleNavClick} />
                             <NavItem icon={<CalendarIcon className="h-6 w-6" />} label={View.CALENDAR} activeView={activeView} onClick={handleNavClick} />

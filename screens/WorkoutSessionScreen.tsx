@@ -2,10 +2,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Exercise, WorkoutSession, LoggedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale, ExerciseCategory } from '../types';
-import { ChevronLeftIcon, PlusIcon, TrashIcon, XIcon, CheckCircleIcon, ChevronDownIcon } from '../components/Icons';
+import { ChevronLeftIcon, PlusIcon, TrashIcon, XIcon, CheckCircleIcon, ChevronDownIcon, DumbbellIcon, InfoIcon } from '../components/Icons';
 import { getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { formatSecondsToMMSS, formatDuration, parseTimeToSeconds } from '../utils';
+import { formatSecondsToMMSS, formatDuration, parseTimeToSeconds, vibrate } from '../utils';
+import ExerciseInfoModal from '../components/ExerciseInfoModal';
 
 // Time Input Component for better UX
 interface TimeInputProps {
@@ -76,6 +77,7 @@ const WorkoutSessionScreen: React.FC = () => {
     
     const [elapsedTime, setElapsedTime] = useState(activeWorkoutSession?.duration || 0);
     const [isTimerEditModalOpen, setIsTimerEditModalOpen] = useState(false);
+    const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
 
     useEffect(() => {
         if (activeWorkoutSession?.completed) {
@@ -239,6 +241,8 @@ const WorkoutSessionScreen: React.FC = () => {
                 const set = { ...newSets[setIndex] };
                 const isNowCompleting = !set.completed;
                 set.completed = isNowCompleting;
+
+                if(isNowCompleting) vibrate();
                 
                 if (isNowCompleting) {
                     const isCountType = exercise?.measurementType === MeasurementType.COUNT;
@@ -269,6 +273,7 @@ const WorkoutSessionScreen: React.FC = () => {
     };
 
     const handleFinishWorkout = () => {
+        vibrate([100, 50, 100]);
         const cleanedLoggedExercises = loggedExercises
             .map(log => {
                 const { tempId, ...rest } = log; // Remove temporary ID
@@ -328,7 +333,7 @@ const WorkoutSessionScreen: React.FC = () => {
 
     return (
         <div className="h-full w-full bg-light-bg dark:bg-dark-bg flex flex-col font-sans">
-            <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4">
+            <header className="flex-shrink-0 bg-light-card dark:bg-dark-card h-16 flex items-center justify-between px-4 safe-top-padding">
                  <button onClick={handleCancelWorkout} className="p-2 flex items-center justify-center" aria-label="Voltar">
                     <ChevronLeftIcon className="h-6 w-6 text-light-text dark:text-dark-text" />
                 </button>
@@ -348,7 +353,7 @@ const WorkoutSessionScreen: React.FC = () => {
                     Cancelar
                 </button>
             </header>
-            <main className="flex-grow overflow-y-auto p-4 space-y-4 pb-24">
+            <main className="flex-grow overflow-y-auto p-4 space-y-4">
                 {routine.notes && (
                     <div className="bg-light-card dark:bg-dark-card p-3 rounded-lg border-l-4" style={{borderColor: routine.color}}>
                         <h3 className="text-md font-semibold text-light-text dark:text-dark-text mb-1">Anotações da Rotina</h3>
@@ -364,9 +369,26 @@ const WorkoutSessionScreen: React.FC = () => {
                     const exerciseSets = loggedEx.sets || [];
                     const setsToRender = exerciseSets.length > 0 ? exerciseSets : [{}];
                     return (
-                        <div key={loggedEx.tempId} className="bg-light-card dark:bg-dark-card p-4 rounded-lg">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-lg font-semibold text-light-text dark:text-dark-text">{exercise.name}</h3>
+                        <div key={loggedEx.tempId} className="bg-light-card dark:bg-dark-card p-4 rounded-lg space-y-4">
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-12 h-12 bg-light-bg dark:bg-dark-bg rounded-md flex-shrink-0 flex items-center justify-center">
+                                        {exercise.imageUrl ? (
+                                            <img
+                                                src={exercise.imageUrl}
+                                                alt={exercise.name}
+                                                className="w-full h-full object-cover rounded-md"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <DumbbellIcon className="h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary" />
+                                        )}
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-light-text dark:text-dark-text">{exercise.name}</h3>
+                                    <button type="button" onClick={() => setInfoExercise(exercise)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}>
+                                        <InfoIcon className="h-5 w-5" />
+                                    </button>
+                                </div>
                                 <button type="button" onClick={() => handleRemoveExercise(loggedEx.tempId)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Remover ${exercise.name} do treino`}>
                                     <TrashIcon className="h-5 w-5" />
                                 </button>
@@ -377,19 +399,10 @@ const WorkoutSessionScreen: React.FC = () => {
                                 onChange={(e) => handleExerciseNoteChange(loggedEx.tempId, e.target.value)}
                                 placeholder="Anotações do treino para este exercício..."
                                 rows={2}
-                                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-sm mb-3"
+                                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-sm"
                             />
                             
-                            <div className="grid grid-cols-12 gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary font-bold mb-2 px-1">
-                                <div className="col-span-1 text-center" title="Completado">✓</div>
-                                <div className="col-span-1 text-center">#</div>
-                                <div className="col-span-2 text-center">{exercise.measurementType === MeasurementType.COUNT ? 'Reps' : 'Tempo (MM:SS)'}</div>
-                                <div className="col-span-3 text-center">{exercise.unit !== Unit.NONE ? exercise.unit : ''}</div>
-                                <div className="col-span-4 text-center">{scaleOptions ? "Esforço" : ""}</div>
-                                <div className="col-span-1"></div>
-                            </div>
-
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {setsToRender.map((set, setIndex) => {
                                     const originalSet = originalPlanRef.current[exIndex]?.sets[setIndex] || {};
                                     const isCountType = exercise.measurementType === MeasurementType.COUNT;
@@ -431,19 +444,32 @@ const WorkoutSessionScreen: React.FC = () => {
                                     }
                                     
                                     return (
-                                        <div key={setIndex}>
-                                            <div className={`grid grid-cols-12 gap-2 items-center transition-opacity ${set.completed ? 'opacity-50' : ''}`}>
-                                                <div className="col-span-1 flex items-center justify-center">
-                                                    <input 
+                                        <div key={setIndex} className={`bg-light-bg dark:bg-dark-bg p-3 rounded-lg space-y-3 transition-opacity ${set.completed ? 'opacity-50' : ''}`}>
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleToggleSetComplete(loggedEx.tempId, setIndex)}>
+                                                     <input 
                                                         type="checkbox"
                                                         aria-label={`Marcar série ${setIndex + 1} como completa`}
                                                         checked={!!set.completed}
-                                                        onChange={() => handleToggleSetComplete(loggedEx.tempId, setIndex)}
+                                                        readOnly
                                                         className="h-5 w-5 rounded text-secondary bg-light-bg dark:bg-dark-bg border-light-border dark:border-dark-border focus:ring-secondary focus:ring-2 cursor-pointer"
                                                     />
+                                                     <span className={`font-bold text-lg text-light-text dark:text-dark-text ${set.completed ? 'line-through' : ''}`}>Série {setIndex + 1}</span>
                                                 </div>
-                                                <div className={`col-span-1 flex items-center justify-center h-10 bg-light-bg dark:bg-dark-bg rounded-md font-bold text-light-text dark:text-dark-text ${set.completed ? 'line-through' : ''}`}>{setIndex + 1}</div>
-                                                <div className="col-span-2">
+                                                <button onClick={() => handleDeleteSet(loggedEx.tempId, setIndex)} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Deletar série ${setIndex + 1}`}>
+                                                    <TrashIcon className="h-5 w-5" />
+                                                </button>
+                                            </div>
+
+                                            {lastSetString && (
+                                                <div className="w-full text-center text-xs text-secondary dark:text-pink-400" aria-label={`Dados da última vez: ${lastSetString}`}>
+                                                    {lastSetString}
+                                                </div>
+                                            )}
+
+                                            <div className="flex flex-wrap gap-4">
+                                                <div className="flex-1 min-w-[100px]">
+                                                    <label className="block text-xs font-medium mb-1 text-light-text-secondary dark:text-dark-text-secondary">{isCountType ? 'Repetições' : 'Tempo'}</label>
                                                     {isCountType ? (
                                                         <input 
                                                             type="number" 
@@ -453,7 +479,7 @@ const WorkoutSessionScreen: React.FC = () => {
                                                             value={set.reps ?? ''}
                                                             onFocus={(e) => e.target.select()}
                                                             onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'reps', e.target.value)}
-                                                            className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
+                                                            className={`w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
                                                         />
                                                     ) : (
                                                         <TimeInput
@@ -470,12 +496,13 @@ const WorkoutSessionScreen: React.FC = () => {
                                                                 }));
                                                             }}
                                                             placeholder={repsTimePlaceholder}
-                                                            className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
+                                                            className={`w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
                                                         />
                                                     )}
                                                 </div>
-                                                <div className="col-span-3">
-                                                    {exercise.unit !== Unit.NONE &&
+                                                {exercise.unit !== Unit.NONE &&
+                                                    <div className="flex-1 min-w-[100px]">
+                                                        <label className="block text-xs font-medium mb-1 text-light-text-secondary dark:text-dark-text-secondary">{exercise.unit}</label>
                                                         <input 
                                                             type="number" 
                                                             aria-label={`Peso para série ${setIndex + 1}`}
@@ -483,53 +510,36 @@ const WorkoutSessionScreen: React.FC = () => {
                                                             value={set.value ?? ''}
                                                             onFocus={(e) => e.target.select()}
                                                             onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'value', e.target.value)}
-                                                            className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
+                                                            className={`w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-2 text-center text-light-text dark:text-dark-text transition-colors duration-300 ${set.completed ? 'line-through' : ''}`}
                                                         />
-                                                    }
-                                                </div>
-                                                <div className="col-span-4">
-                                                    {scaleOptions && (
+                                                    </div>
+                                                }
+                                                 {scaleOptions && (
+                                                    <div className="flex-1 min-w-[120px]">
+                                                        <label className="block text-xs font-medium mb-1 text-light-text-secondary dark:text-dark-text-secondary">Esforço</label>
                                                         <div className="relative h-10 w-full">
-                                                            <div 
-                                                                className={`w-full h-full flex items-center justify-between bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md px-2 text-left text-sm transition-colors duration-300 pointer-events-none ${set.completed ? 'line-through' : ''} ${!set.effort ? 'text-light-text-secondary dark:text-dark-text-secondary' : 'text-light-text dark:text-dark-text'}`}
-                                                            >
-                                                                <span className="truncate">
-                                                                    {set.effort || (effortFromPlan ? `Sug: ${effortFromPlan}` : 'Selecionar...')}
-                                                                </span>
-                                                                <ChevronDownIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary" />
-                                                            </div>
-
                                                             <select
                                                                 value={set.effort || ''}
                                                                 onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'effort', e.target.value)}
-                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                className={`w-full h-full appearance-none bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md px-2 text-left text-sm transition-colors duration-300 cursor-pointer ${set.completed ? 'line-through' : ''} ${!set.effort ? 'text-light-text-secondary dark:text-dark-text-secondary' : 'text-light-text dark:text-dark-text'}`}
                                                                 aria-label={`Esforço para série ${setIndex + 1}`}
                                                             >
-                                                                <option value="">-</option>
+                                                                <option value="">{effortFromPlan ? `Sug: ${effortFromPlan}` : 'Selecionar...'}</option>
                                                                 {scaleOptions.map(opt => (
                                                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                                 ))}
                                                             </select>
+                                                            <ChevronDownIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                                                         </div>
-                                                    )}
-                                                </div>
-                                                <div className="col-span-1 flex justify-center">
-                                                    <button onClick={() => handleDeleteSet(loggedEx.tempId, setIndex)} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Deletar série ${setIndex + 1}`}>
-                                                        <TrashIcon className="h-5 w-5" />
-                                                    </button>
-                                                </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {lastSetString && (
-                                                <div className="w-full text-center text-xs text-secondary dark:text-pink-400 mt-1" aria-label={`Dados da última vez: ${lastSetString}`}>
-                                                    {lastSetString}
-                                                </div>
-                                            )}
                                         </div>
                                     )
                                 })}
                             </div>
                             
-                            <button onClick={() => handleAddSet(loggedEx.tempId)} className="w-full mt-4 bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-md flex items-center justify-center">
+                            <button onClick={() => handleAddSet(loggedEx.tempId)} className="w-full mt-2 bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-md flex items-center justify-center text-sm">
                                 <PlusIcon className="h-5 w-5 mr-2" />
                                 Adicionar Série
                             </button>
@@ -544,14 +554,16 @@ const WorkoutSessionScreen: React.FC = () => {
                     <PlusIcon className="h-5 w-5 mr-2" />
                     Adicionar Exercício
                 </button>
-                <button 
+            </main>
+            <footer className="flex-shrink-0 bg-light-card dark:bg-dark-card p-4 border-t border-light-border dark:border-dark-border safe-bottom-padding">
+                 <button 
                     onClick={handleFinishWorkout} 
-                    className="w-full mt-4 bg-secondary hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-md flex items-center justify-center text-lg"
+                    className="w-full bg-secondary hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-md flex items-center justify-center text-lg"
                 >
                     <CheckCircleIcon className="h-6 w-6 mr-2" />
                     Concluir Treino
                 </button>
-            </main>
+            </footer>
             {isExercisePickerOpen && (
                 <ExercisePickerModal 
                     onClose={() => setIsExercisePickerOpen(false)}
@@ -577,6 +589,12 @@ const WorkoutSessionScreen: React.FC = () => {
                     onClose={() => setIsTimerEditModalOpen(false)}
                     onSave={(newTime) => setElapsedTime(newTime)}
                     initialTime={elapsedTime}
+                />
+            )}
+            {infoExercise && (
+                <ExerciseInfoModal
+                    exercise={infoExercise}
+                    onClose={() => setInfoExercise(null)}
                 />
             )}
         </div>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Vitruvian Fit</title>
 
     <!-- PWA & Mobile Meta Tags -->
@@ -100,6 +100,20 @@
 
       .dark html {
         scrollbar-color: #374151 transparent; /* thumb track */
+      }
+
+      /* Safe Area Insets for Mobile Devices */
+      .safe-top-padding {
+          padding-top: env(safe-area-inset-top);
+      }
+      .safe-bottom-padding {
+          padding-bottom: env(safe-area-inset-bottom);
+      }
+      .safe-left-padding {
+          padding-left: env(safe-area-inset-left);
+      }
+      .safe-right-padding {
+          padding-right: env(safe-area-inset-right);
       }
     </style>
 <link rel="stylesheet" href="/index.css">

@@ -1,4 +1,5 @@
 
+
 import { WorkoutSet } from './types';
 
 // Helper function to format total seconds into MM:SS format
@@ -82,4 +83,11 @@ export const getAverageReps = (set: WorkoutSet): number => {
         return (set.repsMin + set.repsMax) / 2;
     }
     return set.repsMin ?? set.repsMax ?? 0;
+};
+
+// Triggers a vibration on supported mobile devices.
+export const vibrate = (pattern: number | number[] = 50) => {
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(pattern);
+    }
 };

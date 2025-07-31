@@ -2,11 +2,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Routine, Folder, Exercise, ExerciseCategory, PlannedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale } from '../types';
-import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon, InfoIcon } from '../components/Icons';
+import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon, InfoIcon, DumbbellIcon } from '../components/Icons';
 import { ROUTINE_COLORS, getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { formatSecondsToMMSS, parseTimeToSeconds } from '../utils';
 import FolderStatsModal from '../components/FolderStatsModal';
+import ExerciseInfoModal from '../components/ExerciseInfoModal';
 
 
 // Time Input Component for better UX
@@ -422,7 +423,7 @@ const FolderItem: React.FC<FolderItemProps> = ({ folder, routines, onEditRoutine
     return (
         <div 
             ref={dropRef}
-            className={`bg-light-card dark:bg-dark-card rounded-lg border-2 transition-colors ${isDropTarget ? 'border-primary' : 'border-transparent'}`}
+            className={`bg-light-card dark:bg-dark-card rounded-lg border-2 transition-colors ${isDropTarget ? 'border-primary bg-primary/20' : 'border-transparent'}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -622,6 +623,7 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
         JSON.parse(JSON.stringify(routineToEdit?.plannedExercises || []))
     );
     const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
+    const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
 
     const handleSetChange = (exIndex: number, setIndex: number, field: keyof WorkoutSet, value: any) => {
         setPlannedExercises(prev => {
@@ -722,7 +724,24 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                                 return (
                                 <div key={pex.exerciseId} className="bg-light-bg dark:bg-dark-bg p-3 rounded-lg">
                                     <div className="flex justify-between items-center mb-2">
-                                        <p className="font-semibold">{exercise.name}</p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-12 h-12 bg-light-card dark:bg-dark-card rounded-md flex-shrink-0 flex items-center justify-center">
+                                                {exercise.imageUrl ? (
+                                                    <img
+                                                        src={exercise.imageUrl}
+                                                        alt={exercise.name}
+                                                        className="w-full h-full object-cover rounded-md"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <DumbbellIcon className="h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary" />
+                                                )}
+                                            </div>
+                                            <p className="font-semibold">{exercise.name}</p>
+                                            <button type="button" onClick={() => setInfoExercise(exercise)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}>
+                                                <InfoIcon className="h-5 w-5" />
+                                            </button>
+                                        </div>
                                         <button type="button" onClick={() => handleRemoveExercise(exIndex)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
                                     </div>
                                     {/* Column Headers */}
@@ -788,6 +807,12 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                         onSelect={handleAddExerciseToRoutine}
                         allExercises={allExercises}
                         plannedExercises={plannedExercises}
+                    />
+                )}
+                {infoExercise && (
+                    <ExerciseInfoModal 
+                        exercise={infoExercise}
+                        onClose={() => setInfoExercise(null)}
                     />
                 )}
             </div>
