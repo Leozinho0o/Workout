@@ -21,11 +21,11 @@ const StatsScreen: React.FC = () => {
     const [isFlexibilidadeExpanded, setIsFlexibilidadeExpanded] = useState(true);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-    // Default to last 7 days
+    // Default to last 5 days
     const [endDate, setEndDate] = useState(formatDateForInput(new Date()));
     const [startDate, setStartDate] = useState(() => {
         const d = new Date();
-        d.setDate(d.getDate() - 6); // Set to 6 days ago for a 7-day total period
+        d.setDate(d.getDate() - 4); // Set to 4 days ago for a 5-day total period
         return formatDateForInput(d);
     });
 

@@ -426,23 +426,25 @@ const FolderItem: React.FC<FolderItemProps> = ({ folder, routines, onEditRoutine
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
-            <div 
-                className="flex items-center justify-between p-3 cursor-pointer"
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <div className="flex items-center">
-                    <FolderIcon className="h-6 w-6 mr-3 text-yellow-400" />
-                    <span className="font-bold text-lg text-light-text dark:text-dark-text">{folder.name}</span>
-                </div>
-                <div className="flex items-center space-x-2">
+            <div className="p-3">
+                <div className="flex items-center justify-end space-x-2 mb-2">
                     <button onClick={onShowStats} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500 dark:hover:text-blue-400"><InfoIcon className="h-5 w-5" /></button>
                     <button onClick={onEditFolder} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"><PencilIcon className="h-5 w-5" /></button>
                     <button onClick={onDeleteFolder} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
+                </div>
+                <div 
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
+                    <div className="flex items-center">
+                        <FolderIcon className="h-6 w-6 mr-3 text-yellow-400" />
+                        <span className="font-bold text-lg text-light-text dark:text-dark-text">{folder.name}</span>
+                    </div>
                     <ChevronRightIcon className={`h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                 </div>
             </div>
             {isExpanded && (
-                <div className="pl-6 pr-3 pb-3 space-y-2">
+                <div className="px-3 pb-3 space-y-2">
                     {routines.map(routine => (
                         <RoutineItem 
                             key={routine.id}
@@ -479,24 +481,24 @@ const RoutineItem: React.FC<RoutineItemProps> = ({ routine, onEdit, onDelete, on
                 e.dataTransfer.effectAllowed = "move";
             }}
         >
-            {/* Top row */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center flex-grow min-w-0 pr-2">
-                    <span className="h-4 w-4 rounded-sm mr-4 flex-shrink-0" style={{ backgroundColor: routine.color }}></span>
-                    <span className="font-semibold text-light-text dark:text-dark-text truncate">{routine.name}</span>
-                </div>
-                <div className="flex items-center space-x-1 flex-shrink-0">
-                    <button
-                        onClick={onStartWorkout}
-                        className="p-2 flex items-center justify-center text-secondary hover:text-pink-700"
-                        aria-label={`Iniciar treino ${routine.name}`}
-                    >
-                        <PlayIcon className="h-5 w-5" />
-                    </button>
-                    <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"><PencilIcon className="h-5 w-5" /></button>
-                    <button onClick={onDuplicate} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text"><CopyIcon className="h-5 w-5" /></button>
-                    <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
-                </div>
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end space-x-1 flex-shrink-0">
+                <button
+                    onClick={onStartWorkout}
+                    className="p-2 flex items-center justify-center text-secondary hover:text-pink-700"
+                    aria-label={`Iniciar treino ${routine.name}`}
+                >
+                    <PlayIcon className="h-5 w-5" />
+                </button>
+                <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"><PencilIcon className="h-5 w-5" /></button>
+                <button onClick={onDuplicate} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text"><CopyIcon className="h-5 w-5" /></button>
+                <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
+            </div>
+            
+            {/* Title */}
+            <div className="flex items-center flex-grow min-w-0">
+                <span className="h-4 w-4 rounded-sm mr-4 flex-shrink-0" style={{ backgroundColor: routine.color }}></span>
+                <span className="font-semibold text-light-text dark:text-dark-text truncate">{routine.name}</span>
             </div>
 
             {/* Notes row */}

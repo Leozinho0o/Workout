@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback, Fragment } from 'react';
+import React, { useState, useMemo, useCallback, Fragment, useRef } from 'react';
 import { useApp } from '../App';
 import { WorkoutSession, Routine, Folder, PlannedExercise, Unit, Exercise, WorkoutSet } from '../types';
 import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, TrashIcon, XIcon, PlusIcon, PencilIcon } from '../components/Icons';
@@ -23,6 +23,35 @@ const isSameDay = (d1: Date, d2: Date) =>
 
 const formatDate = (date: Date) => date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
+interface GhostWorkoutItemProps {
+    routine: Routine | undefined;
+    x: number;
+    y: number;
+}
+
+const GhostWorkoutItem: React.FC<GhostWorkoutItemProps> = ({ routine, x, y }) => {
+    if (!routine) return null;
+    const textColorClass = getContrastYIQ(routine.color);
+
+    return (
+        <div
+            id="ghost-workout-item"
+            className={`fixed p-1 rounded text-sm z-[9999] pointer-events-none opacity-80 shadow-2xl ${textColorClass}`}
+            style={{
+                backgroundColor: routine.color,
+                left: `${x}px`,
+                top: `${y}px`,
+                transform: 'translate(-50%, -50%)',
+                minWidth: '100px',
+                textAlign: 'center',
+            }}
+        >
+            <span className="font-bold w-full break-words">{routine.name}</span>
+        </div>
+    );
+};
+
+
 const CalendarScreen: React.FC = () => {
     const { routines, workouts, folders, logWorkout, updateWorkout, deleteWorkout, setActiveWorkoutSession, exercises } = useApp();
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -34,6 +63,9 @@ const CalendarScreen: React.FC = () => {
     const [draggingWorkoutId, setDraggingWorkoutId] = useState<string | null>(null);
     const [dropTargetDate, setDropTargetDate] = useState<string | null>(null);
 
+    // For touch drag & drop
+    const [ghostElement, setGhostElement] = useState<GhostWorkoutItemProps | null>(null);
+    const dragStartInfo = useRef<{ x: number; y: number; workout: WorkoutSession; routine: Routine | undefined; } | null>(null);
 
     const handlePrevMonth = () => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
     const handleNextMonth = () => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
@@ -84,8 +116,6 @@ const CalendarScreen: React.FC = () => {
             workoutDate.setHours(hours, minutes, 0, 0);
             workoutStartTime = workoutDate.toISOString();
         } else {
-            // Convention: If no time is provided, store only the date string.
-            // This lets us know that a specific time was not set.
             workoutStartTime = dateString;
         }
 
@@ -108,17 +138,12 @@ const CalendarScreen: React.FC = () => {
             setConfirmDeleteWorkoutId(null);
         }
     }
-
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>, day: Date) => {
-        e.preventDefault();
-        const workoutId = e.dataTransfer.getData('application/vitruvian-fit-workout');
+    
+    const moveWorkoutToDate = useCallback((workoutId: string, newDate: Date) => {
         const workoutToMove = workouts.find((w: WorkoutSession) => w.id === workoutId);
 
         if (workoutToMove) {
-            const newDate = new Date(day);
-            
             let newStartTime: string;
-            // If original startTime has time component, preserve it
             if (workoutToMove.startTime.includes('T')) {
                 const originalTime = new Date(workoutToMove.startTime);
                 newDate.setHours(originalTime.getHours());
@@ -137,16 +162,91 @@ const CalendarScreen: React.FC = () => {
             };
             updateWorkout(updatedWorkout);
         }
+    }, [workouts, updateWorkout]);
+
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, day: Date) => {
+        e.preventDefault();
+        const workoutId = e.dataTransfer.getData('application/vitruvian-fit-workout');
+        if (workoutId) {
+            moveWorkoutToDate(workoutId, day);
+        }
         setDropTargetDate(null);
         setDraggingWorkoutId(null);
     };
 
+    // --- Touch Handlers for Mobile Drag & Drop ---
+    const handleTouchStart = (e: React.TouchEvent, workout: WorkoutSession, routine: Routine | undefined) => {
+        if (e.touches.length > 1) return;
+        dragStartInfo.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY,
+            workout,
+            routine
+        };
+    };
+    
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!dragStartInfo.current) return;
+        
+        const touch = e.touches[0];
+        const dx = Math.abs(touch.clientX - dragStartInfo.current.x);
+        const dy = Math.abs(touch.clientY - dragStartInfo.current.y);
+
+        // Threshold to differentiate a tap from a drag
+        if (dx < 5 && dy < 5 && !draggingWorkoutId) return;
+
+        // --- It's a drag ---
+        if (e.cancelable) e.preventDefault();
+
+        // Start drag state if it hasn't started
+        if (!draggingWorkoutId) {
+            const { workout, routine } = dragStartInfo.current;
+            setDraggingWorkoutId(workout.id);
+            setGhostElement({
+                routine,
+                x: touch.clientX,
+                y: touch.clientY,
+            });
+        }
+        
+        // Update ghost position
+        setGhostElement(g => g ? { ...g, x: touch.clientX, y: touch.clientY } : null);
+        
+        // Find drop target
+        const ghostDOMElement = document.getElementById('ghost-workout-item');
+        if (ghostDOMElement) ghostDOMElement.style.display = 'none';
+        const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (ghostDOMElement) ghostDOMElement.style.display = 'block';
+
+        const dayCell = targetElement?.closest('[data-date]');
+        const date = dayCell?.getAttribute('data-date');
+        setDropTargetDate(date || null);
+    };
+
+    const handleTouchEnd = () => {
+        if (draggingWorkoutId && dropTargetDate) {
+            const newDate = new Date(`${dropTargetDate}T00:00:00`);
+            moveWorkoutToDate(draggingWorkoutId, newDate);
+        }
+        
+        // Cleanup
+        setDraggingWorkoutId(null);
+        setDropTargetDate(null);
+        setGhostElement(null);
+        dragStartInfo.current = null;
+    };
 
     const today = new Date();
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     return (
-        <div className="px-2 xl:px-4 py-4 flex flex-col h-full text-light-text dark:text-dark-text">
+        <div 
+            className="px-2 xl:px-4 py-4 flex flex-col h-full text-light-text dark:text-dark-text"
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+        >
             <header className="flex items-center justify-between mb-4">
                 <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-light-card dark:hover:bg-dark-card flex items-center justify-center"><ChevronLeftIcon className="h-6 w-6" /></button>
                 <h2 className="text-lg font-bold capitalize">{formatDate(currentDate)}</h2>
@@ -162,6 +262,7 @@ const CalendarScreen: React.FC = () => {
 
                     return (
                         <div key={index} 
+                             data-date={dayString}
                              className={`relative p-1 border border-light-border dark:border-dark-border rounded-md min-h-[8rem] xl:min-h-[10rem] flex flex-col transition-colors duration-200 ${day ? 'hover:bg-light-card dark:hover:bg-dark-card cursor-pointer' : 'bg-transparent border-transparent'} ${isDropTarget ? 'bg-primary/20 border-primary' : ''}`}
                              onClick={() => day && handleDayClick(day)}
                              onDragOver={(e) => {
@@ -183,6 +284,7 @@ const CalendarScreen: React.FC = () => {
                                             return (
                                                 <div key={workout.id} 
                                                      onClick={(e) => { e.stopPropagation(); handleWorkoutClick(workout)}}
+                                                     onTouchStart={(e) => handleTouchStart(e, workout, routine)}
                                                      draggable="true"
                                                      onDragStart={(e) => {
                                                          e.stopPropagation();
@@ -195,7 +297,7 @@ const CalendarScreen: React.FC = () => {
                                                          setDropTargetDate(null);
                                                      }}
                                                      className={`text-sm p-1 rounded flex items-start cursor-grab transition-opacity ${textColorClass} ${draggingWorkoutId === workout.id ? 'opacity-50' : workout.completed ? 'opacity-60' : ''}`}
-                                                     style={{ backgroundColor: routine?.color }}>
+                                                     style={{ backgroundColor: routine?.color, touchAction: 'none' }}>
                                                      <span className="font-bold w-full break-words">{routine?.name}</span>
                                                 </div>
                                             );
@@ -207,6 +309,7 @@ const CalendarScreen: React.FC = () => {
                     );
                 })}
             </div>
+             {ghostElement && <GhostWorkoutItem {...ghostElement} />}
              {selectedDate && (
                 <AddWorkoutModal 
                     onClose={() => setSelectedDate(null)} 
