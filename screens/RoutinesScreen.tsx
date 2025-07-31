@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Routine, Folder, Exercise, ExerciseCategory, PlannedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale } from '../types';
@@ -160,7 +161,7 @@ const RoutinesScreen = () => {
 
     return (
         <div 
-            className="relative h-full"
+            className="relative h-full overflow-y-auto"
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDropOnRoot}
         >
