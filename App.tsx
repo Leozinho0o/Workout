@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Exercise, Routine, Folder, WorkoutSession, Theme } from './types';
 import { INITIAL_EXERCISES, INITIAL_ROUTINES, INITIAL_FOLDERS, DEFAULT_MUSCLE_GROUPS } from './constants';
@@ -291,7 +289,7 @@ const App: React.FC = () => {
 
     return (
         <AppContext.Provider value={contextValue}>
-            <div className="h-screen w-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text flex font-sans safe-left-padding safe-right-padding">
+            <div className="h-full w-full bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text flex font-sans safe-left-padding safe-right-padding">
                 {!activeWorkoutSession && <Sidebar activeView={activeView} setActiveView={handleNavClick} />}
                 
                 <div className="flex-1 flex flex-col h-full max-w-xl mx-auto lg:max-w-none lg:mx-0 shadow-2xl lg:shadow-none">
@@ -306,7 +304,7 @@ const App: React.FC = () => {
                         </header>
                     )}
                     
-                    <main className="flex-grow overflow-y-auto bg-light-bg dark:bg-dark-bg">
+                    <main className="flex-grow overflow-y-auto overflow-x-hidden bg-light-bg dark:bg-dark-bg">
                         {renderContent()}
                     </main>
 

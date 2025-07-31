@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Routine, Folder, Exercise, ExerciseCategory, PlannedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale } from '../types';
@@ -283,7 +282,7 @@ const RoutinesScreen = () => {
             </div>
 
             {/* FAB and Add Options for Mobile */}
-            <div className="fixed bottom-28 right-6 z-20 lg:hidden" ref={addOptionsRef}>
+            <div className="fixed bottom-36 right-6 z-20 lg:hidden" ref={addOptionsRef}>
                 <div className="flex flex-col items-end">
                     {isAddOptionsOpen && (
                         <div className="flex flex-col items-end mb-2">
