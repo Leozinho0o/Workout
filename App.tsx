@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Exercise, Routine, Folder, WorkoutSession, Theme } from './types';
 import { INITIAL_EXERCISES, INITIAL_ROUTINES, INITIAL_FOLDERS, DEFAULT_MUSCLE_GROUPS } from './constants';
@@ -304,7 +305,7 @@ const App: React.FC = () => {
                         </header>
                     )}
                     
-                    <main className="flex-grow overflow-y-auto overflow-x-hidden bg-light-bg dark:bg-dark-bg">
+                    <main className="flex-grow min-h-0 overflow-y-auto overflow-x-hidden bg-light-bg dark:bg-dark-bg">
                         {renderContent()}
                     </main>
 
