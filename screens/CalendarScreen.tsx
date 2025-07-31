@@ -5,33 +5,7 @@ import { WorkoutSession, Routine, Folder, PlannedExercise, Unit, Exercise, Worko
 import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, TrashIcon, XIcon, PlusIcon, PencilIcon } from '../components/Icons';
 import { getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
-
-// Helper function to format total seconds into MM:SS format
-const formatSecondsToMMSS = (totalSeconds: number | null | undefined): string => {
-  if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds < 0) {
-    return '00:00';
-  }
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-};
-
-const formatDurationForDisplay = (totalSeconds: number | null | undefined): string | null => {
-  if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds <= 0) {
-    return null;
-  }
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  const paddedMinutes = String(minutes).padStart(2, '0');
-  const paddedSeconds = String(seconds).padStart(2, '0');
-
-  if (hours > 0) {
-    return `${hours}:${paddedMinutes}:${paddedSeconds}`;
-  }
-  return `${paddedMinutes}:${paddedSeconds}`;
-};
+import { formatSecondsToMMSS, formatDuration } from '../utils';
 
 // Helper function to determine text color based on background hex color
 const getContrastYIQ = (hexcolor?: string): string => {
@@ -137,7 +111,7 @@ const CalendarScreen: React.FC = () => {
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>, day: Date) => {
         e.preventDefault();
-        const workoutId = e.dataTransfer.getData('application/gympro-workout');
+        const workoutId = e.dataTransfer.getData('application/vitruvian-fit-workout');
         const workoutToMove = workouts.find((w: WorkoutSession) => w.id === workoutId);
 
         if (workoutToMove) {
@@ -172,7 +146,7 @@ const CalendarScreen: React.FC = () => {
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     return (
-        <div className="px-2 py-4 flex flex-col h-full text-light-text dark:text-dark-text">
+        <div className="px-2 lg:px-4 py-4 flex flex-col h-full text-light-text dark:text-dark-text">
             <header className="flex items-center justify-between mb-4">
                 <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-light-card dark:hover:bg-dark-card flex items-center justify-center"><ChevronLeftIcon className="h-6 w-6" /></button>
                 <h2 className="text-lg font-bold capitalize">{formatDate(currentDate)}</h2>
@@ -188,7 +162,7 @@ const CalendarScreen: React.FC = () => {
 
                     return (
                         <div key={index} 
-                             className={`relative p-1 border border-light-border dark:border-dark-border rounded-md h-32 flex flex-col transition-colors duration-200 ${day ? 'hover:bg-light-card dark:hover:bg-dark-card cursor-pointer' : 'bg-transparent border-transparent'} ${isDropTarget ? 'bg-primary/20 border-primary' : ''}`}
+                             className={`relative p-1 border border-light-border dark:border-dark-border rounded-md min-h-[8rem] lg:min-h-[10rem] flex flex-col transition-colors duration-200 ${day ? 'hover:bg-light-card dark:hover:bg-dark-card cursor-pointer' : 'bg-transparent border-transparent'} ${isDropTarget ? 'bg-primary/20 border-primary' : ''}`}
                              onClick={() => day && handleDayClick(day)}
                              onDragOver={(e) => {
                                  e.preventDefault();
@@ -202,7 +176,7 @@ const CalendarScreen: React.FC = () => {
                                     <span className={`text-xs ${isSameDay(day, today) ? 'bg-secondary text-white rounded-full h-5 w-5 flex items-center justify-center font-bold' : ''} ${day.getMonth() !== currentDate.getMonth() ? 'text-gray-400 dark:text-gray-600' : ''}`}>
                                         {day.getDate()}
                                     </span>
-                                    <div className="mt-1 space-y-1 overflow-y-auto">
+                                    <div className="mt-1 space-y-1">
                                         {workoutsByDate.get(dayString)?.map(workout => {
                                             const routine = routines.find((r: Routine) => r.id === workout.routineId);
                                             const textColorClass = getContrastYIQ(routine?.color);
@@ -212,7 +186,7 @@ const CalendarScreen: React.FC = () => {
                                                      draggable="true"
                                                      onDragStart={(e) => {
                                                          e.stopPropagation();
-                                                         e.dataTransfer.setData('application/gympro-workout', workout.id);
+                                                         e.dataTransfer.setData('application/vitruvian-fit-workout', workout.id);
                                                          e.dataTransfer.effectAllowed = 'move';
                                                          setDraggingWorkoutId(workout.id);
                                                      }}
@@ -220,9 +194,9 @@ const CalendarScreen: React.FC = () => {
                                                          setDraggingWorkoutId(null);
                                                          setDropTargetDate(null);
                                                      }}
-                                                     className={`text-sm p-1 rounded flex items-center cursor-grab transition-opacity ${textColorClass} ${draggingWorkoutId === workout.id ? 'opacity-50' : workout.completed ? 'opacity-60' : ''}`}
+                                                     className={`text-sm p-1 rounded flex items-start cursor-grab transition-opacity ${textColorClass} ${draggingWorkoutId === workout.id ? 'opacity-50' : workout.completed ? 'opacity-60' : ''}`}
                                                      style={{ backgroundColor: routine?.color }}>
-                                                     <span className="font-bold truncate w-full">{routine?.name}</span>
+                                                     <span className="font-bold w-full break-words">{routine?.name}</span>
                                                 </div>
                                             );
                                         })}
@@ -354,7 +328,7 @@ const WorkoutDetailModal: React.FC<WorkoutDetailModalProps> = ({ workout, routin
     if(!routine) return null;
     
     const isCompleted = workout.completed;
-    const durationString = formatDurationForDisplay(workout.duration);
+    const durationString = formatDuration(workout.duration);
 
     return (
          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">

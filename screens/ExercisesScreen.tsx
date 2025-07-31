@@ -1,16 +1,17 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Exercise, ExerciseCategory, MeasurementType, Unit, PerceivedExertionScale } from '../types';
-import { DumbbellIcon, HeartPulseIcon, StretchIcon, PlusIcon, XIcon, PencilIcon, TrashIcon, ImageIcon, PlayIcon, SearchIcon, ChevronRightIcon } from '../components/Icons';
+import { DumbbellIcon, HeartPulseIcon, StretchIcon, PlusIcon, XIcon, PencilIcon, TrashIcon, ImageIcon, PlayIcon, SearchIcon, ChevronRightIcon, InfoIcon } from '../components/Icons';
 import ConfirmationModal from '../components/ConfirmationModal';
+import ExerciseInfoModal from '../components/ExerciseInfoModal';
 
 // Main Screen Component
 const ExercisesScreen: React.FC = () => {
-    const { exercises, muscleGroups, addExercise, updateExercise, deleteExercise } = useApp();
+    const { exercises, muscleGroups, addExercise, updateExercise, deleteExercise, workouts } = useApp();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
     const [confirmDeleteInfo, setConfirmDeleteInfo] = useState<{ id: string; name: string } | null>(null);
+    const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
 
 
     // Filter states
@@ -101,23 +102,35 @@ const ExercisesScreen: React.FC = () => {
 
     return (
         <div className="relative h-full">
-            <div className="p-4 space-y-6 pb-40">
+            <div className="p-4 lg:p-6 space-y-6 pb-40">
                 {/* --- Search and Filter UI --- */}
                 <div className="space-y-4">
-                    {/* Search */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <SearchIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary" />
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                        {/* Search */}
+                        <div className="relative flex-grow">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nome do exercício..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-light-text dark:text-dark-text focus:ring-2 focus:ring-primary focus:border-primary transition-colors h-[42px]"
+                                aria-label="Buscar exercícios"
+                            />
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Buscar por nome do exercício..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-light-text dark:text-dark-text focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                            aria-label="Buscar exercícios"
-                        />
+                         {/* Desktop Add Button */}
+                        <button
+                            onClick={openAddModal}
+                            className="hidden lg:flex bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg items-center flex-shrink-0 h-[42px]"
+                            aria-label="Adicionar novo exercício"
+                        >
+                            <PlusIcon className="h-5 w-5 mr-2" />
+                            Novo Exercício
+                        </button>
                     </div>
+
                     {/* Filters */}
                     <div className="flex flex-col sm:flex-row gap-4">
                         {/* Category Filter */}
@@ -128,7 +141,7 @@ const ExercisesScreen: React.FC = () => {
                                     <button
                                         key={option.label}
                                         onClick={() => setCategoryFilter(option.value)}
-                                        className={`w-full flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors ${
+                                        className={`flex-1 flex items-center justify-center p-2 rounded-md text-sm font-semibold transition-colors ${
                                             categoryFilter === option.value
                                                 ? 'bg-primary text-white shadow'
                                                 : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-light-card dark:hover:bg-dark-border'
@@ -160,7 +173,7 @@ const ExercisesScreen: React.FC = () => {
                                                 onChange={() => handleMuscleFilterToggle(muscle)}
                                                 className="h-4 w-4 rounded text-secondary bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-secondary mr-3"
                                             />
-                                            <span className="text-light-text dark:text-dark-text">{muscle}</span>
+                                            <span className="text-light-text dark:text-dark-text truncate">{muscle}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -184,6 +197,7 @@ const ExercisesScreen: React.FC = () => {
                                         exercise={exercise} 
                                         onEdit={() => openEditModal(exercise)}
                                         onDelete={() => setConfirmDeleteInfo({ id: exercise.id, name: exercise.name })}
+                                        onShowInfo={() => setInfoExercise(exercise)}
                                     />
                                 ))}
                             </div>
@@ -198,17 +212,13 @@ const ExercisesScreen: React.FC = () => {
                 )}
             </div>
 
-            <div className="fixed inset-0 z-20 pointer-events-none">
-                <div className="max-w-md mx-auto relative h-full">
-                    <button
-                        onClick={openAddModal}
-                        className="absolute bottom-24 right-6 bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg pointer-events-auto flex items-center justify-center"
-                        aria-label="Adicionar novo exercício"
-                    >
-                        <PlusIcon className="h-8 w-8" />
-                    </button>
-                </div>
-            </div>
+            <button
+                onClick={openAddModal}
+                className="fixed bottom-32 right-6 z-20 lg:hidden bg-secondary hover:bg-pink-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+                aria-label="Adicionar novo exercício"
+            >
+                <PlusIcon className="h-8 w-8" />
+            </button>
 
             {isModalOpen && (
                 <ExerciseFormModal
@@ -231,6 +241,12 @@ const ExercisesScreen: React.FC = () => {
                     }
                 />
             )}
+            {infoExercise && (
+                <ExerciseInfoModal
+                    exercise={infoExercise}
+                    onClose={() => setInfoExercise(null)}
+                />
+            )}
         </div>
     );
 };
@@ -240,25 +256,40 @@ interface ExerciseListItemProps {
     exercise: Exercise;
     onEdit: () => void;
     onDelete: () => void;
+    onShowInfo: () => void;
 }
 
-const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, onDelete }) => {
+const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, onDelete, onShowInfo }) => {
     return (
-        <div className="bg-light-card dark:bg-dark-card p-3 rounded-lg flex items-start justify-between">
-            <div className="flex-grow pr-2">
+        <div className="bg-light-card dark:bg-dark-card p-3 rounded-lg flex items-center justify-between gap-3">
+            <div className="w-16 h-16 bg-light-bg dark:bg-dark-bg rounded-md flex-shrink-0 flex items-center justify-center">
+                {exercise.imageUrl ? (
+                    <img
+                        src={exercise.imageUrl}
+                        alt={exercise.name}
+                        className="w-full h-full object-cover rounded-md"
+                        loading="lazy"
+                    />
+                ) : (
+                    <DumbbellIcon className="h-8 w-8 text-light-text-secondary dark:text-dark-text-secondary" />
+                )}
+            </div>
+
+            <div className="flex-grow pr-2 min-w-0">
                 <div className="flex items-center gap-2">
-                    <p className="font-semibold text-light-text dark:text-dark-text">{exercise.name}</p>
-                    {exercise.imageUrl && <ImageIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary" />}
-                    {exercise.videoUrl && <PlayIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary" />}
+                    <p className="font-semibold text-light-text dark:text-dark-text truncate">{exercise.name}</p>
+                    {exercise.videoUrl && <PlayIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />}
                 </div>
-                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{exercise.primaryMuscles.join(', ')}</p>
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">{exercise.primaryMuscles.join(', ')}</p>
                 {exercise.notes && (
-                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-2 italic">
+                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1 italic truncate">
                         "{exercise.notes}"
                     </p>
                 )}
             </div>
+
             <div className="flex items-center space-x-1 flex-shrink-0">
+                 <button onClick={onShowInfo} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}><InfoIcon className="h-5 w-5" /></button>
                  <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text" aria-label={`Editar ${exercise.name}`}><PencilIcon className="h-5 w-5" /></button>
                  <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Apagar ${exercise.name}`}><TrashIcon className="h-5 w-5" /></button>
             </div>
@@ -286,6 +317,36 @@ const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({ onClose, onSave, 
     const [newMuscle, setNewMuscle] = useState('');
     const [imageUrl, setImageUrl] = useState(exerciseToEdit?.imageUrl || '');
     const [videoUrl, setVideoUrl] = useState(exerciseToEdit?.videoUrl || '');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor, selecione um arquivo de imagem válido.');
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                }
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const youtubeId = useMemo(() => {
+        if (!videoUrl) return null;
+        // Regex to find YouTube video ID from various URL formats
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = videoUrl.match(regExp);
+        if (match && match[2].length === 11) {
+            return match[2];
+        }
+        return null;
+    }, [videoUrl]);
 
     const handlePrimaryMuscleToggle = (muscle: string) => {
         const isCurrentlyPrimary = primaryMuscles.includes(muscle);
@@ -423,15 +484,63 @@ const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({ onClose, onSave, 
                     <h4 className="text-lg font-semibold">Recursos Visuais (Opcional)</h4>
 
                     <div>
-                        <label htmlFor="imageUrl" className="block text-sm font-medium mb-1">URL da Imagem</label>
-                        <input 
-                            type="url" 
-                            id="imageUrl" 
-                            value={imageUrl} 
-                            onChange={e => setImageUrl(e.target.value)} 
-                            placeholder="https://exemplo.com/imagem.jpg"
-                            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
-                        />
+                        <label className="block text-sm font-medium mb-1">Imagem</label>
+                        {imageUrl && imageUrl.startsWith('data:image') ? (
+                            <div className="mt-2 p-3 bg-light-bg dark:bg-dark-bg rounded-lg">
+                                <p className="text-sm text-green-600 dark:text-green-400">✓ Imagem carregada do dispositivo.</p>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setImageUrl('')} 
+                                    className="mt-1 text-sm text-red-600 dark:text-red-500 hover:underline"
+                                >
+                                    Remover
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <div>
+                                    <label htmlFor="imageUrl" className="block text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary mb-1">URL da Imagem</label>
+                                    <input 
+                                        type="url" 
+                                        id="imageUrl" 
+                                        value={imageUrl} 
+                                        onChange={e => setImageUrl(e.target.value)} 
+                                        placeholder="https://exemplo.com/imagem.jpg"
+                                        className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <hr className="flex-grow border-light-border dark:border-dark-border"/>
+                                    <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">OU</span>
+                                    <hr className="flex-grow border-light-border dark:border-dark-border"/>
+                                </div>
+                                <input
+                                    type="file"
+                                    id="imageUpload"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    accept="image/png, image/jpeg, image/gif, image/webp"
+                                    className="hidden"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md text-sm"
+                                >
+                                    Carregar do Dispositivo
+                                </button>
+                            </div>
+                        )}
+                        
+                        {imageUrl && (
+                            <div className="mt-2 rounded-lg overflow-hidden bg-light-bg dark:bg-dark-bg flex justify-center items-center p-2">
+                                <img 
+                                    src={imageUrl} 
+                                    alt="Pré-visualização" 
+                                    className="max-h-48 w-auto object-contain rounded-md"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -444,6 +553,20 @@ const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({ onClose, onSave, 
                             placeholder="https://youtube.com/watch?v=..."
                             className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
                         />
+                        {youtubeId && (
+                            <div className="mt-2 aspect-video">
+                                <iframe
+                                    width="100%"
+                                    height="100%"
+                                    src={`https://www.youtube.com/embed/${youtubeId}`}
+                                    title="YouTube video player"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                    className="rounded-lg"
+                                ></iframe>
+                            </div>
+                        )}
                     </div>
                     
                     <hr className="border-light-border dark:border-dark-border" />
