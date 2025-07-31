@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Routine, Folder, Exercise, ExerciseCategory, PlannedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale } from '../types';
@@ -161,7 +162,7 @@ const RoutinesScreen = () => {
 
     return (
         <div 
-            className="relative h-full overflow-y-auto"
+            className="relative h-full overflow-y-auto overflow-x-auto"
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDropOnRoot}
         >
@@ -277,7 +278,7 @@ const RoutinesScreen = () => {
                 )}
                 {searchQuery !== '' && !hasSearchResults && (
                      <div className="text-center text-light-text-secondary dark:text-dark-text-secondary mt-10">
-                        <p>Nenhum resultado encontrado para "{searchQuery}".</p>
+                        <p>Nenhum resultado encontrado para "{searchQuery}".p>
                     </div>
                 )}
             </div>
@@ -684,7 +685,7 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                     <button type="button" onClick={onClose} className="p-1 rounded-full flex items-center justify-center hover:bg-light-bg dark:hover:bg-dark-bg"><XIcon className="h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary" /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="flex-grow flex flex-col overflow-hidden">
-                    <div className="overflow-y-auto pr-2 space-y-4">
+                    <div className="overflow-y-auto overflow-x-auto pr-2 space-y-4">
                         {/* Routine Details */}
                         <div>
                             <label htmlFor="routineName" className="block text-sm font-medium mb-1">Nome da Rotina</label>

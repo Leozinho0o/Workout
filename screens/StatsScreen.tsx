@@ -1,4 +1,5 @@
 
+
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../App';
 import { WorkoutSession, Routine, ExerciseCategory, Unit, MeasurementType } from '../types';
@@ -503,7 +504,7 @@ const StatsScreen: React.FC = () => {
     }, [filteredWorkouts, exercises, muscleGroups]);
 
     return (
-        <div className="p-4 overflow-y-auto h-full">
+        <div className="p-4 overflow-y-auto overflow-x-auto h-full">
             <div id="pdf-capture-area" className="space-y-6">
                 <section className="bg-light-card dark:bg-dark-card p-4 rounded-lg">
                     <h2 className="text-xl font-bold text-light-text dark:text-dark-text mb-3">Filtro de Período</h2>

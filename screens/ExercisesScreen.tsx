@@ -101,7 +101,7 @@ const ExercisesScreen: React.FC = () => {
     ];
 
     return (
-        <div className="relative h-full overflow-y-auto">
+        <div className="relative h-full overflow-y-auto overflow-x-auto">
             <div className="p-4 lg:p-6 space-y-6 pb-40">
                 {/* --- Search and Filter UI --- */}
                 <div className="space-y-4">

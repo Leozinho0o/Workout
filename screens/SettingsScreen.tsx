@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { useApp } from '../App';
 import { Theme } from '../types';
@@ -49,7 +50,7 @@ const SettingsScreen: React.FC = () => {
     ];
 
     return (
-        <div className="p-4 space-y-8">
+        <div className="p-4 space-y-8 h-full overflow-y-auto overflow-x-auto">
             {/* Theme Selection */}
             <section>
                 <h2 className="text-xl font-bold mb-3 text-light-text dark:text-dark-text">Tema</h2>

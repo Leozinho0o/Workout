@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Exercise, WorkoutSession, LoggedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale, ExerciseCategory } from '../types';
@@ -353,7 +354,7 @@ const WorkoutSessionScreen: React.FC = () => {
                     Cancelar
                 </button>
             </header>
-            <main className="flex-grow overflow-y-auto p-4 space-y-4">
+            <main className="flex-grow overflow-y-auto overflow-x-auto p-4 space-y-4">
                 {routine.notes && (
                     <div className="bg-light-card dark:bg-dark-card p-3 rounded-lg border-l-4" style={{borderColor: routine.color}}>
                         <h3 className="text-md font-semibold text-light-text dark:text-dark-text mb-1">Anotações da Rotina</h3>
