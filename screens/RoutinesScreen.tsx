@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Routine, Folder, Exercise, ExerciseCategory, PlannedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale } from '../types';
-import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon, InfoIcon, DumbbellIcon } from '../components/Icons';
+import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon, InfoIcon, DumbbellIcon, GripVerticalIcon } from '../components/Icons';
 import { ROUTINE_COLORS, getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { formatSecondsToMMSS, parseTimeToSeconds } from '../utils';
@@ -560,49 +560,76 @@ interface ExercisePickerModalProps {
     onClose: () => void;
     onSelect: (exerciseId: string) => void;
     allExercises: Exercise[];
-    plannedExercises: PlannedExercise[];
 }
 
-const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({ onClose, onSelect, allExercises, plannedExercises }) => {
+const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({ onClose, onSelect, allExercises }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredExercises = useMemo(() => {
+        const query = searchQuery.toLowerCase().trim();
+        if (!query) {
+            return allExercises;
+        }
+        return allExercises.filter(ex => ex.name.toLowerCase().includes(query));
+    }, [allExercises, searchQuery]);
+
     const exercisesByCategory = useMemo(() => {
-        return allExercises.reduce((acc, exercise) => {
+        return filteredExercises.reduce((acc, exercise) => {
             if (!acc[exercise.category]) acc[exercise.category] = [];
             acc[exercise.category].push(exercise);
             return acc;
         }, {} as Record<ExerciseCategory, Exercise[]>);
-    }, [allExercises]);
+    }, [filteredExercises]);
 
-    const plannedExerciseIds = useMemo(() => new Set(plannedExercises.map(e => e.exerciseId)), [plannedExercises]);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
             <div className="bg-light-card dark:bg-dark-card rounded-lg p-6 w-full max-w-md max-h-[80vh] flex flex-col text-light-text dark:text-dark-text">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 flex-shrink-0">
                     <h3 className="text-xl font-bold">Selecionar Exercício</h3>
                     <button type="button" onClick={onClose} className="p-1 rounded-full flex items-center justify-center hover:bg-light-bg dark:hover:bg-dark-bg"><XIcon className="h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary" /></button>
                 </div>
-                <div className="overflow-y-auto space-y-3">
-                    {Object.entries(exercisesByCategory).map(([category, exercises]) => (
-                        <div key={category}>
-                            <h4 className="font-semibold text-light-text-secondary dark:text-dark-text-secondary mt-2 sticky top-0 bg-light-card dark:bg-dark-card py-1">{category}</h4>
-                            {exercises.map(ex => {
-                                const isSelected = plannedExerciseIds.has(ex.id);
-                                return (
-                                <button
-                                    key={ex.id}
-                                    onClick={() => onSelect(ex.id)}
-                                    disabled={isSelected}
-                                    className={'w-full text-left p-3 rounded-md flex items-center hover:bg-light-bg dark:hover:bg-dark-bg disabled:opacity-50 disabled:cursor-not-allowed'}
-                                >
-                                    {isSelected ? 
-                                        <CheckCircleIcon className="h-5 w-5 mr-3 flex-shrink-0 text-primary"/> :
-                                        <div className={'h-5 w-5 mr-3 flex-shrink-0 rounded-full border-2 border-light-text-secondary dark:border-dark-text-secondary'}></div>
-                                    }
-                                    <span>{ex.name}</span>
-                                </button>
-                            )})}
+                <div className="relative mb-4 flex-shrink-0">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <SearchIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Buscar por nome..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4"
+                        autoFocus
+                    />
+                </div>
+                <div className="overflow-y-auto space-y-3 flex-grow pr-1">
+                    {Object.keys(exercisesByCategory).length > 0 ? (
+                        Object.entries(exercisesByCategory).map(([category, exercises]) => (
+                            <div key={category}>
+                                <h4 className="font-semibold text-light-text-secondary dark:text-dark-text-secondary mt-2 sticky top-0 bg-light-card dark:bg-dark-card py-1">{category}</h4>
+                                {exercises.map(ex => (
+                                    <button
+                                        key={ex.id}
+                                        onClick={() => onSelect(ex.id)}
+                                        className="w-full text-left p-2 rounded-md flex items-center gap-3 hover:bg-light-bg dark:hover:bg-dark-bg"
+                                    >
+                                        <div className="w-10 h-10 bg-light-bg dark:bg-dark-bg rounded-md flex-shrink-0 flex items-center justify-center">
+                                            {ex.imageUrl ? (
+                                                <img src={ex.imageUrl} alt={ex.name} className="w-full h-full object-cover rounded-md" loading="lazy" />
+                                            ) : (
+                                                <DumbbellIcon className="h-6 w-6 text-light-text-secondary" />
+                                            )}
+                                        </div>
+                                        <span className="flex-grow">{ex.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center py-10 text-light-text-secondary dark:text-dark-text-secondary">
+                            Nenhum exercício encontrado.
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
         </div>
@@ -611,7 +638,7 @@ const ExercisePickerModal: React.FC<ExercisePickerModalProps> = ({ onClose, onSe
 
 interface RoutineFormModalProps {
     onClose: () => void;
-    onSave: (data: Omit<Routine, 'id'>) => void;
+    onSave: (data: Omit<Routine, 'id'> | Routine) => void;
     routineToEdit: Routine | null;
     allExercises: Exercise[];
     allFolders: Folder[];
@@ -627,6 +654,37 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
     );
     const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
     const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
+    const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggingIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+    
+    const handleDragEnter = (e: React.DragEvent, targetIndex: number) => {
+        if (draggingIndex === null || draggingIndex === targetIndex) {
+            return;
+        }
+        setPlannedExercises(prev => {
+            const newExercises = [...prev];
+            const [draggedItem] = newExercises.splice(draggingIndex, 1);
+            newExercises.splice(targetIndex, 0, draggedItem);
+            setDraggingIndex(targetIndex);
+            return newExercises;
+        });
+    };
+    
+    const handleDragEnd = () => {
+        setDraggingIndex(null);
+    };
+
+    const handleExerciseNoteChange = (exIndex: number, value: string) => {
+        setPlannedExercises(prev => {
+            const newExercises = [...prev];
+            newExercises[exIndex] = { ...newExercises[exIndex], notes: value };
+            return newExercises;
+        });
+    };
 
     const handleSetChange = (exIndex: number, setIndex: number, field: keyof WorkoutSet, value: any) => {
         setPlannedExercises(prev => {
@@ -655,9 +713,7 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
     };
     
     const handleAddExerciseToRoutine = (exerciseId: string) => {
-        if (!plannedExercises.some(p => p.exerciseId === exerciseId)) {
-            setPlannedExercises(prev => [...prev, { exerciseId, sets: [{}], notes: '' }]);
-        }
+        setPlannedExercises(prev => [...prev, { exerciseId, sets: [{}], notes: '' }]);
         setIsExercisePickerOpen(false);
     };
 
@@ -671,14 +727,10 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
             alert("O nome da rotina é obrigatório.");
             return;
         }
-        const cleanedPlannedExercises = plannedExercises
-            .map(pex => ({
-                ...pex,
-                sets: pex.sets.filter(set => Object.keys(set).length > 0)
-            }))
-            .filter(pex => pex.sets.length > 0);
         
-        onSave({ name, color, notes, folderId, plannedExercises: cleanedPlannedExercises });
+        // Save all exercises and sets as they appear in the form, without filtering.
+        // This allows users to save exercises as placeholders without filling details immediately.
+        onSave({ name, color, notes, folderId, plannedExercises });
     };
 
     return (
@@ -725,9 +777,18 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                                 const scaleOptions = getScaleOptions(exercise.perceivedExertionScale);
                                 
                                 return (
-                                <div key={pex.exerciseId} className="bg-light-bg dark:bg-dark-bg p-3 rounded-lg">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="flex items-center gap-2">
+                                <div
+                                    key={`${pex.exerciseId}-${exIndex}`}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, exIndex)}
+                                    onDragEnter={(e) => handleDragEnter(e, exIndex)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    className={`bg-light-bg dark:bg-dark-bg p-3 rounded-lg cursor-grab transition-opacity ${draggingIndex === exIndex ? 'opacity-40' : 'opacity-100'}`}
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-start gap-3 flex-grow min-w-0">
+                                            <GripVerticalIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary mt-1 flex-shrink-0" />
                                             <div className="w-12 h-12 bg-light-card dark:bg-dark-card rounded-md flex-shrink-0 flex items-center justify-center">
                                                 {exercise.imageUrl ? (
                                                     <img
@@ -740,13 +801,26 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                                                     <DumbbellIcon className="h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary" />
                                                 )}
                                             </div>
-                                            <p className="font-semibold">{exercise.name}</p>
-                                            <button type="button" onClick={() => setInfoExercise(exercise)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}>
-                                                <InfoIcon className="h-5 w-5" />
-                                            </button>
+                                            <div className="flex-grow min-w-0">
+                                                <div className="flex items-center gap-1">
+                                                    <p className="font-semibold break-words">{exercise.name}</p>
+                                                    <button type="button" onClick={() => setInfoExercise(exercise)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500 flex-shrink-0" aria-label={`Informações sobre ${exercise.name}`}>
+                                                        <InfoIcon className="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <button type="button" onClick={() => handleRemoveExercise(exIndex)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><TrashIcon className="h-5 w-5" /></button>
+                                        <button type="button" onClick={() => handleRemoveExercise(exIndex)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500 flex-shrink-0"><TrashIcon className="h-5 w-5" /></button>
                                     </div>
+
+                                    <textarea
+                                        value={pex.notes || ''}
+                                        onChange={(e) => handleExerciseNoteChange(exIndex, e.target.value)}
+                                        placeholder="Anotações para este exercício (ex: cadência, foco)..."
+                                        rows={2}
+                                        className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-2 text-sm mb-3"
+                                    />
+                                    
                                     {/* Column Headers */}
                                     <div className="grid grid-cols-12 gap-x-2 items-center text-xs text-center font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2 px-1">
                                         <div className="col-span-1">#</div>
@@ -809,7 +883,6 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                         onClose={() => setIsExercisePickerOpen(false)}
                         onSelect={handleAddExerciseToRoutine}
                         allExercises={allExercises}
-                        plannedExercises={plannedExercises}
                     />
                 )}
                 {infoExercise && (

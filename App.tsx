@@ -94,6 +94,31 @@ const App: React.FC = () => {
     const updateExercise = useCallback((updatedExercise: Exercise) => {
         setExercises(prev => prev.map(e => e.id === updatedExercise.id ? updatedExercise : e));
     }, [setExercises]);
+    
+    const duplicateExercise = useCallback((exerciseId: string) => {
+        setExercises(prevExercises => {
+            const exerciseToDuplicate = prevExercises.find(e => e.id === exerciseId);
+            if (!exerciseToDuplicate) {
+                console.error("Exercise to duplicate not found");
+                return prevExercises;
+            }
+
+            const newExercise: Exercise = {
+                ...JSON.parse(JSON.stringify(exerciseToDuplicate)), // Deep copy
+                id: `ex${Date.now()}`,
+                name: `${exerciseToDuplicate.name} (Cópia)`,
+            };
+
+            const index = prevExercises.findIndex(e => e.id === exerciseId);
+            const newExercisesList = [...prevExercises];
+            if (index !== -1) {
+                newExercisesList.splice(index + 1, 0, newExercise);
+            } else {
+                newExercisesList.push(newExercise);
+            }
+            return newExercisesList;
+        });
+    }, [setExercises]);
 
     const deleteExercise = useCallback((exerciseId: string) => {
         setExercises(prev => prev.filter(e => e.id !== exerciseId));
@@ -244,6 +269,7 @@ const App: React.FC = () => {
         addExercise,
         updateExercise,
         deleteExercise,
+        duplicateExercise,
         addRoutine,
         updateRoutine,
         deleteRoutine,
@@ -261,7 +287,7 @@ const App: React.FC = () => {
         startWorkoutFromRoutine,
     }), [
         exercises, routines, folders, workouts, muscleGroups, activeWorkoutSession, theme,
-        addExercise, updateExercise, deleteExercise, 
+        addExercise, updateExercise, deleteExercise, duplicateExercise,
         addRoutine, updateRoutine, deleteRoutine, duplicateRoutine, moveRoutineToFolder,
         addFolder, updateFolder, deleteFolder, 
         logWorkout, updateWorkout, deleteWorkout, 

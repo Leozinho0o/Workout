@@ -1,15 +1,14 @@
 
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Exercise, ExerciseCategory, MeasurementType, Unit, PerceivedExertionScale } from '../types';
-import { DumbbellIcon, HeartPulseIcon, StretchIcon, PlusIcon, XIcon, PencilIcon, TrashIcon, ImageIcon, PlayIcon, SearchIcon, ChevronRightIcon, InfoIcon } from '../components/Icons';
+import { DumbbellIcon, HeartPulseIcon, StretchIcon, PlusIcon, XIcon, PencilIcon, TrashIcon, ImageIcon, PlayIcon, SearchIcon, ChevronRightIcon, InfoIcon, CopyIcon } from '../components/Icons';
 import ConfirmationModal from '../components/ConfirmationModal';
 import ExerciseInfoModal from '../components/ExerciseInfoModal';
 
 // Main Screen Component
 const ExercisesScreen: React.FC = () => {
-    const { exercises, muscleGroups, addExercise, updateExercise, deleteExercise, workouts } = useApp();
+    const { exercises, muscleGroups, addExercise, updateExercise, deleteExercise, duplicateExercise, workouts } = useApp();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
     const [confirmDeleteInfo, setConfirmDeleteInfo] = useState<{ id: string; name: string } | null>(null);
@@ -80,13 +79,20 @@ const ExercisesScreen: React.FC = () => {
     }, [exercises, searchQuery, categoryFilter, muscleFilter]);
 
     const exercisesByCategory = useMemo(() => {
-        return filteredExercises.reduce((acc, exercise) => {
+        const grouped = filteredExercises.reduce((acc, exercise) => {
             if (!acc[exercise.category]) {
                 acc[exercise.category] = [];
             }
             acc[exercise.category].push(exercise);
             return acc;
         }, {} as Record<ExerciseCategory, Exercise[]>);
+
+        // Sort exercises within each category alphabetically
+        for (const category in grouped) {
+            grouped[category as ExerciseCategory].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+        }
+
+        return grouped;
     }, [filteredExercises]);
 
     const categoryIcons: Record<ExerciseCategory, React.ReactNode> = {
@@ -167,6 +173,16 @@ const ExercisesScreen: React.FC = () => {
                             </button>
                             {isMuscleFilterOpen && (
                                 <div className="absolute top-full right-0 mt-2 w-full sm:w-64 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-xl z-10 p-2 max-h-64 overflow-y-auto">
+                                    <label className="flex items-center p-2 rounded-md hover:bg-light-bg dark:hover:bg-dark-bg cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            checked={muscleFilter.length === 0}
+                                            onChange={() => setMuscleFilter([])}
+                                            className="h-4 w-4 text-secondary bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-secondary mr-3"
+                                        />
+                                        <span className="text-light-text dark:text-dark-text truncate font-semibold">Todos</span>
+                                    </label>
+                                    <hr className="my-1 border-light-border dark:border-dark-border" />
                                     {muscleGroups.map((muscle: string) => (
                                         <label key={muscle} className="flex items-center p-2 rounded-md hover:bg-light-bg dark:hover:bg-dark-bg cursor-pointer">
                                             <input
@@ -200,6 +216,7 @@ const ExercisesScreen: React.FC = () => {
                                         onEdit={() => openEditModal(exercise)}
                                         onDelete={() => setConfirmDeleteInfo({ id: exercise.id, name: exercise.name })}
                                         onShowInfo={() => setInfoExercise(exercise)}
+                                        onDuplicate={() => duplicateExercise(exercise.id)}
                                     />
                                 ))}
                             </div>
@@ -259,14 +276,16 @@ interface ExerciseListItemProps {
     onEdit: () => void;
     onDelete: () => void;
     onShowInfo: () => void;
+    onDuplicate: () => void;
 }
 
-const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, onDelete, onShowInfo }) => {
+const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, onDelete, onShowInfo, onDuplicate }) => {
     return (
         <div className="bg-light-card dark:bg-dark-card p-3 rounded-lg flex flex-col">
             {/* Top row: buttons are now at the top of the card */}
             <div className="flex justify-end items-center space-x-1 flex-shrink-0 -mt-1 -mr-1 mb-1">
                 <button onClick={onShowInfo} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}><InfoIcon className="h-5 w-5" /></button>
+                <button onClick={onDuplicate} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-primary dark:hover:text-dark-text" aria-label={`Duplicar ${exercise.name}`}><CopyIcon className="h-5 w-5" /></button>
                 <button onClick={onEdit} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text" aria-label={`Editar ${exercise.name}`}><PencilIcon className="h-5 w-5" /></button>
                 <button onClick={onDelete} className="p-2 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500" aria-label={`Apagar ${exercise.name}`}><TrashIcon className="h-5 w-5" /></button>
             </div>
@@ -293,7 +312,12 @@ const ExerciseListItem: React.FC<ExerciseListItemProps> = ({ exercise, onEdit, o
                         <p className="font-semibold text-light-text dark:text-dark-text break-words">{exercise.name}</p>
                         {exercise.videoUrl && <PlayIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary flex-shrink-0" />}
                     </div>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary break-words">{exercise.primaryMuscles.join(', ')}</p>
+                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary break-words">
+                        <span className="font-semibold text-light-text dark:text-dark-text">{exercise.primaryMuscles.join(', ')}</span>
+                        {exercise.secondaryMuscles.length > 0 && (
+                            <span>, {exercise.secondaryMuscles.join(', ')}</span>
+                        )}
+                    </p>
                     {exercise.notes && (
                         <div className="mt-2">
                             <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary italic break-words">
@@ -448,7 +472,8 @@ const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({ onClose, onSave, 
                             <div>
                                 <label htmlFor="measurementType" className="block text-sm font-medium mb-1">Tipo de Medida</label>
                                 <select id="measurementType" value={measurementType} onChange={e => setMeasurementType(e.target.value as MeasurementType)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                                    {Object.values(MeasurementType).map(type => <option key={type} value={type}>{type}</option>)}
+                                    <option value={MeasurementType.COUNT}>Repetições</option>
+                                    <option value={MeasurementType.TIME}>{MeasurementType.TIME}</option>
                                 </select>
                             </div>
                             <div>
