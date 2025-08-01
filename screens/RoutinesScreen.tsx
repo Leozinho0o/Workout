@@ -2,12 +2,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Routine, Folder, Exercise, ExerciseCategory, PlannedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale } from '../types';
-import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon, InfoIcon, DumbbellIcon, GripVerticalIcon } from '../components/Icons';
+import { FolderIcon, PlusIcon, PencilIcon, TrashIcon, XIcon, ChevronRightIcon, PlayIcon, CheckCircleIcon, CopyIcon, SearchIcon, InfoIcon, DumbbellIcon, GripVerticalIcon, ChevronDownIcon } from '../components/Icons';
 import { ROUTINE_COLORS, getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { formatSecondsToMMSS, parseTimeToSeconds } from '../utils';
 import FolderStatsModal from '../components/FolderStatsModal';
 import ExerciseInfoModal from '../components/ExerciseInfoModal';
+import CustomSelect, { CustomSelectOption } from '../components/CustomSelect';
+import EffortPicker from '../components/EffortPicker';
 
 
 // Time Input Component for better UX
@@ -55,7 +57,6 @@ const TimeInput: React.FC<TimeInputProps> = ({ id, valueInSeconds, onChangeInSec
         />
     );
 };
-
 
 // Main Component
 const RoutinesScreen = () => {
@@ -656,6 +657,12 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
     const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
+    const folderOptions: CustomSelectOption[] = allFolders.map(f => ({
+        value: f.id,
+        label: f.name,
+        icon: <FolderIcon className="h-5 w-5 text-yellow-400" />
+    }));
+
     const handleDragStart = (e: React.DragEvent, index: number) => {
         setDraggingIndex(index);
         e.dataTransfer.effectAllowed = 'move';
@@ -757,10 +764,13 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                         </div>
                          <div>
                             <label htmlFor="folderId" className="block text-sm font-medium mb-1">Pasta (Opcional)</label>
-                            <select id="folderId" value={folderId || ''} onChange={e => setFolderId(e.target.value || null)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                                <option value="">Nenhuma</option>
-                                {allFolders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                            </select>
+                            <CustomSelect
+                                id="folderId"
+                                options={folderOptions}
+                                value={folderId ?? undefined}
+                                onChange={(val) => setFolderId(val ?? null)}
+                                placeholder="Nenhuma"
+                            />
                         </div>
                         <div>
                             <label htmlFor="routineNotes" className="block text-sm font-medium mb-1">Anotações (Opcional)</label>
@@ -786,7 +796,7 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                                     onDragOver={(e) => e.preventDefault()}
                                     className={`bg-light-bg dark:bg-dark-bg p-3 rounded-lg cursor-grab transition-opacity ${draggingIndex === exIndex ? 'opacity-40' : 'opacity-100'}`}
                                 >
-                                    <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-start mb-2">
                                         <div className="flex items-start gap-3 flex-grow min-w-0">
                                             <GripVerticalIcon className="h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary mt-1 flex-shrink-0" />
                                             <div className="w-12 h-12 bg-light-card dark:bg-dark-card rounded-md flex-shrink-0 flex items-center justify-center">
@@ -810,7 +820,6 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                                                 </div>
                                             </div>
                                         </div>
-                                        <button type="button" onClick={() => handleRemoveExercise(exIndex)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500 flex-shrink-0"><TrashIcon className="h-5 w-5" /></button>
                                     </div>
 
                                     <textarea
@@ -852,16 +861,27 @@ const RoutineFormModal: React.FC<RoutineFormModalProps> = ({ onClose, onSave, ro
                                                 <div className="col-span-3">
                                                 {exercise.unit !== Unit.NONE && <input type="number" placeholder={exercise.unit} value={set.value ?? ''} onChange={e => handleSetChange(exIndex, setIndex, 'value', e.target.value ? Number(e.target.value) : undefined)} className="w-full text-center bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-1 text-sm" />}
                                                 </div>
-                                                <div className="col-span-3">
-                                                    {scaleOptions && <select value={set.effort || ''} onChange={e => handleSetChange(exIndex, setIndex, 'effort', e.target.value || undefined)} className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-1 text-sm truncate">
-                                                        <option value="">Esforço</option>
-                                                        {scaleOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                                    </select>}
+                                                <div className="col-span-3 h-8">
+                                                    {scaleOptions && (
+                                                        <EffortPicker
+                                                            value={set.effort}
+                                                            onChange={(val) => handleSetChange(exIndex, setIndex, 'effort', val)}
+                                                            options={scaleOptions}
+                                                        />
+                                                    )}
                                                 </div>
                                                 <button type="button" onClick={() => handleDeleteSet(exIndex, setIndex)} className="col-span-1 flex items-center justify-center p-1 text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500"><XIcon className="h-4 w-4" /></button>
                                             </div>
                                         ))}
-                                        <button type="button" onClick={() => handleAddSet(exIndex)} className="w-full text-sm text-primary hover:underline mt-1">Adicionar Série</button>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-3">
+                                        <button type="button" onClick={() => handleAddSet(exIndex)} className="text-sm font-semibold text-primary hover:underline p-1 -ml-1 flex items-center">
+                                            <PlusIcon className="h-4 w-4 mr-1"/>
+                                            Adicionar Série
+                                        </button>
+                                        <button type="button" onClick={() => handleRemoveExercise(exIndex)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500 flex-shrink-0" aria-label={`Remover ${exercise.name} da rotina`}>
+                                            <TrashIcon className="h-5 w-5" />
+                                        </button>
                                     </div>
                                 </div>
                                 );

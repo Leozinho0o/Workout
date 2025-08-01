@@ -2,9 +2,10 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
 import { Exercise, ExerciseCategory, MeasurementType, Unit, PerceivedExertionScale } from '../types';
-import { DumbbellIcon, HeartPulseIcon, StretchIcon, PlusIcon, XIcon, PencilIcon, TrashIcon, ImageIcon, PlayIcon, SearchIcon, ChevronRightIcon, InfoIcon, CopyIcon } from '../components/Icons';
+import { DumbbellIcon, HeartPulseIcon, StretchIcon, PlusIcon, XIcon, PencilIcon, TrashIcon, ImageIcon, PlayIcon, SearchIcon, ChevronRightIcon, InfoIcon, CopyIcon, ChevronDownIcon } from '../components/Icons';
 import ConfirmationModal from '../components/ConfirmationModal';
 import ExerciseInfoModal from '../components/ExerciseInfoModal';
+import CustomSelect, { CustomSelectOption } from '../components/CustomSelect';
 
 // Main Screen Component
 const ExercisesScreen: React.FC = () => {
@@ -169,7 +170,7 @@ const ExercisesScreen: React.FC = () => {
                                 className="w-full sm:w-48 h-[42px] flex items-center justify-between bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-light-text dark:text-dark-text"
                             >
                                 <span className="truncate">{muscleFilter.length > 0 ? `${muscleFilter.length} selecionado(s)` : 'Todos'}</span>
-                                 <ChevronRightIcon className={`h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary transition-transform duration-200 ${isMuscleFilterOpen ? 'rotate-90' : ''}`} />
+                                 <ChevronDownIcon className={`h-5 w-5 text-light-text-secondary dark:text-dark-text-secondary transition-transform duration-200 ${isMuscleFilterOpen ? 'rotate-180' : ''}`} />
                             </button>
                             {isMuscleFilterOpen && (
                                 <div className="absolute top-full right-0 mt-2 w-full sm:w-64 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-xl z-10 p-2 max-h-64 overflow-y-auto">
@@ -353,6 +354,34 @@ const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({ onClose, onSave, 
     const [videoUrl, setVideoUrl] = useState(exerciseToEdit?.videoUrl || '');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const categoryIcons: Record<ExerciseCategory, React.ReactNode> = {
+        [ExerciseCategory.RESISTED]: <DumbbellIcon className="h-5 w-5 text-blue-400" />,
+        [ExerciseCategory.CARDIO]: <HeartPulseIcon className="h-5 w-5 text-pink-400" />,
+        [ExerciseCategory.FLEXIBILITY]: <StretchIcon className="h-5 w-5 text-green-400" />,
+    };
+
+    const categoryOptions: CustomSelectOption[] = Object.values(ExerciseCategory).map(cat => ({
+        value: cat,
+        label: cat,
+        icon: categoryIcons[cat],
+    }));
+
+    const measurementTypeOptions: CustomSelectOption[] = [
+        { value: MeasurementType.COUNT, label: 'Repetições' },
+        { value: MeasurementType.TIME, label: MeasurementType.TIME },
+    ];
+    
+    const unitOptions: CustomSelectOption[] = Object.values(Unit).map(u => ({
+        value: u,
+        label: u,
+    }));
+
+    const perceivedExertionScaleOptions: CustomSelectOption[] = Object.values(PerceivedExertionScale).map(pes => ({
+        value: pes,
+        label: pes,
+    }));
+
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
@@ -463,33 +492,47 @@ const ExerciseFormModal: React.FC<ExerciseFormModalProps> = ({ onClose, onSave, 
                         
                         <div>
                             <label htmlFor="category" className="block text-sm font-medium mb-1">Categoria</label>
-                            <select id="category" value={category} onChange={e => setCategory(e.target.value as ExerciseCategory)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                                {Object.values(ExerciseCategory).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                            </select>
+                            <CustomSelect
+                                id="category"
+                                options={categoryOptions}
+                                value={category}
+                                onChange={val => setCategory(val as ExerciseCategory)}
+                                allowDeselect={false}
+                            />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="measurementType" className="block text-sm font-medium mb-1">Tipo de Medida</label>
-                                <select id="measurementType" value={measurementType} onChange={e => setMeasurementType(e.target.value as MeasurementType)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                                    <option value={MeasurementType.COUNT}>Repetições</option>
-                                    <option value={MeasurementType.TIME}>{MeasurementType.TIME}</option>
-                                </select>
+                                 <CustomSelect
+                                    id="measurementType"
+                                    options={measurementTypeOptions}
+                                    value={measurementType}
+                                    onChange={val => setMeasurementType(val as MeasurementType)}
+                                    allowDeselect={false}
+                                />
                             </div>
                             <div>
                                 <label htmlFor="unit" className="block text-sm font-medium mb-1">Unidade</label>
-                                <select id="unit" value={unit} onChange={e => setUnit(e.target.value as Unit)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                                    {Object.values(Unit).map(u => <option key={u} value={u}>{u}</option>)}
-                                </select>
+                                <CustomSelect
+                                    id="unit"
+                                    options={unitOptions}
+                                    value={unit}
+                                    onChange={val => setUnit(val as Unit)}
+                                    allowDeselect={false}
+                                />
                             </div>
                         </div>
                         
                         <div>
                             <label htmlFor="perceivedExertionScale" className="block text-sm font-medium mb-1">Escala de Esforço (Opcional)</label>
-                            <select id="perceivedExertionScale" value={perceivedExertionScale || ''} onChange={e => setPerceivedExertionScale(e.target.value as PerceivedExertionScale || undefined)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2">
-                                <option value="">Nenhuma</option>
-                                {Object.values(PerceivedExertionScale).map(scale => <option key={scale} value={scale}>{scale}</option>)}
-                            </select>
+                             <CustomSelect
+                                id="perceivedExertionScale"
+                                options={perceivedExertionScaleOptions}
+                                value={perceivedExertionScale}
+                                onChange={val => setPerceivedExertionScale(val as PerceivedExertionScale | undefined)}
+                                placeholder="Nenhuma"
+                            />
                         </div>
 
                         <hr className="border-light-border dark:border-dark-border" />

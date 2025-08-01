@@ -7,6 +7,7 @@ import { getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { formatSecondsToMMSS, formatDuration, parseTimeToSeconds, vibrate } from '../utils';
 import ExerciseInfoModal from '../components/ExerciseInfoModal';
+import EffortPicker from '../components/EffortPicker';
 
 // Time Input Component for better UX
 interface TimeInputProps {
@@ -554,19 +555,14 @@ const WorkoutSessionScreen: React.FC = () => {
                                                  {scaleOptions && (
                                                     <div className="flex-1 min-w-[120px]">
                                                         <label className="block text-xs font-medium mb-1 text-light-text-secondary dark:text-dark-text-secondary">Esforço</label>
-                                                        <div className="relative h-10 w-full">
-                                                            <select
-                                                                value={set.effort || ''}
-                                                                onChange={e => handleSetChange(loggedEx.tempId, setIndex, 'effort', e.target.value)}
-                                                                className={`w-full h-full appearance-none bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md px-2 text-left text-sm transition-colors duration-300 cursor-pointer ${set.completed ? 'line-through' : ''} ${!set.effort ? 'text-light-text-secondary dark:text-dark-text-secondary' : 'text-light-text dark:text-dark-text'}`}
-                                                                aria-label={`Esforço para série ${setIndex + 1}`}
-                                                            >
-                                                                <option value="">{effortFromPlan ? `Sug: ${effortFromPlan}` : 'Selecionar...'}</option>
-                                                                {scaleOptions.map(opt => (
-                                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                                ))}
-                                                            </select>
-                                                            <ChevronDownIcon className="h-4 w-4 text-light-text-secondary dark:text-dark-text-secondary absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                        <div className="h-10">
+                                                            <EffortPicker
+                                                                value={set.effort}
+                                                                onChange={(val) => handleSetChange(loggedEx.tempId, setIndex, 'effort', val === undefined ? '' : val)}
+                                                                options={scaleOptions}
+                                                                placeholder={effortFromPlan ? `Sug: ${effortFromPlan}` : 'Selecionar...'}
+                                                                disabled={!!set.completed}
+                                                            />
                                                         </div>
                                                     </div>
                                                 )}
