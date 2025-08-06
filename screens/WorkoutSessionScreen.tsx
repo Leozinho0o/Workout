@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../App';
-import { Exercise, WorkoutSession, LoggedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale, ExerciseCategory } from '../types';
+import { Exercise, WorkoutSession, LoggedExercise, WorkoutSet, MeasurementType, Unit, PerceivedExertionScale, ExerciseCategory, Evaluation } from '../types';
 import { ChevronLeftIcon, PlusIcon, TrashIcon, XIcon, CheckCircleIcon, ChevronDownIcon, DumbbellIcon, InfoIcon, GripVerticalIcon, SearchIcon } from '../components/Icons';
 import { getScaleOptions } from '../constants';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -59,6 +58,13 @@ const TimeInput: React.FC<TimeInputProps> = ({ id, valueInSeconds, onChangeInSec
 // Add a temporary ID to each logged exercise for stable keys and state updates
 type TempLoggedExercise = LoggedExercise & { tempId: string };
 
+// Helper function to post messages to the service worker
+const postMessageToSW = (message: any) => {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage(message);
+    }
+};
+
 const WorkoutSessionScreen: React.FC = () => {
     const { 
         activeWorkoutSession, 
@@ -68,7 +74,10 @@ const WorkoutSessionScreen: React.FC = () => {
         workouts,
         updateWorkout,
         logWorkout,
-        deleteWorkout
+        deleteWorkout,
+        evaluations,
+        setInfoModalContent,
+        setIsPhysicalEvaluationScreenOpen
     } = useApp();
     
     // Store the original plan in a ref to use for placeholders. It's stable across re-renders.
@@ -80,21 +89,58 @@ const WorkoutSessionScreen: React.FC = () => {
     const [isTimerEditModalOpen, setIsTimerEditModalOpen] = useState(false);
     const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
-
+    
+    const routine = useMemo(() => 
+        routines.find(r => r.id === activeWorkoutSession?.routineId),
+    [routines, activeWorkoutSession]);
 
     useEffect(() => {
-        if (activeWorkoutSession?.completed) {
-            return; // Don't start timer for completed workouts
+        if (!activeWorkoutSession || activeWorkoutSession.completed) {
+            postMessageToSW({ type: 'CLOSE_WORKOUT_NOTIFICATION' });
+            return;
         }
-
+    
+        const showOrUpdateNotification = (time: number) => {
+            // Check for permission inside the function that shows the notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const title = `Treino em andamento: ${routine?.name || 'Sessão de Treino'}`;
+                const body = `Duração: ${formatDuration(time)}`;
+                postMessageToSW({
+                    type: 'SHOW_WORKOUT_NOTIFICATION',
+                    payload: { title, body }
+                });
+            }
+        };
+    
+        const setupAndRunNotifications = async () => {
+            if ('Notification' in window && Notification.permission === 'default') {
+                // Await the permission request
+                await Notification.requestPermission();
+            }
+            // Now that we have awaited, we can check the permission and show the initial notification
+            showOrUpdateNotification(elapsedTime);
+        };
+    
+        // Run the async setup
+        setupAndRunNotifications();
+    
         const timerId = setInterval(() => {
-            setElapsedTime(prevTime => prevTime + 1);
+            setElapsedTime(prevTime => {
+                const newTime = prevTime + 1;
+                // Update notification every 15 seconds to avoid being too spammy
+                if (newTime > 0 && newTime % 15 === 0) {
+                    showOrUpdateNotification(newTime);
+                }
+                return newTime;
+            });
         }, 1000);
-
+    
         return () => {
             clearInterval(timerId);
+            // On unmount (cancel/finish), close the notification
+            postMessageToSW({ type: 'CLOSE_WORKOUT_NOTIFICATION' });
         };
-    }, [activeWorkoutSession?.completed]);
+    }, [activeWorkoutSession, routine?.name]);
 
     // This function creates the initial state for the workout session.
     // It runs only once when the component mounts.
@@ -131,10 +177,6 @@ const WorkoutSessionScreen: React.FC = () => {
     const [loggedExercises, setLoggedExercises] = useState<TempLoggedExercise[]>(initialLoggedExercises);
     const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
-
-    const routine = useMemo(() => 
-        routines.find(r => r.id === activeWorkoutSession?.routineId),
-    [routines, activeWorkoutSession]);
     
     const historicalData = useMemo(() => {
         if (!activeWorkoutSession) return new Map<string, LoggedExercise>();
@@ -199,6 +241,39 @@ const WorkoutSessionScreen: React.FC = () => {
     }
 
     const handleAddExercise = (exerciseId: string) => {
+        const exerciseToAdd = exercises.find(e => e.id === exerciseId);
+        if (!exerciseToAdd) return;
+
+        const hasBodyMass = evaluations.some((e: Evaluation) => e.measurements.bodyMass && e.measurements.bodyMass > 0);
+
+        if (exerciseToAdd.isCounterweight && !hasBodyMass) {
+            setInfoModalContent({
+                title: 'Massa Corporal Necessária',
+                message: 'Este exercício de contrapeso precisa da sua massa corporal. Por favor, insira este dado na sua avaliação física para continuar.',
+                confirmText: "Ir para Avaliação",
+                showCancelButton: true,
+                cancelText: "Agora não",
+                onConfirm: () => {
+                    if (!activeWorkoutSession) return;
+                    // Construct the current state to save
+                    const currentSessionState: WorkoutSession = {
+                        ...activeWorkoutSession,
+                        // clean up tempId before saving to main state
+                        loggedExercises: loggedExercises.map(({ tempId, ...rest }) => rest),
+                        duration: elapsedTime,
+                    };
+                    setActiveWorkoutSession(currentSessionState);
+                    
+                    // Navigate away
+                    setIsPhysicalEvaluationScreenOpen(true);
+                }
+            });
+            // Don't add the exercise. Wait for user action.
+            // Close the picker modal so the user can see the info modal clearly.
+            setIsExercisePickerOpen(false);
+            return; 
+        }
+
         const newLoggedExercise: TempLoggedExercise = {
             exerciseId,
             sets: [{}],
@@ -237,6 +312,14 @@ const WorkoutSessionScreen: React.FC = () => {
             
             newSets[setIndex] = updatedSet;
             return { ...log, sets: newSets };
+        }));
+    };
+
+    const handleBarbellWeightChange = (tempId: string, value: string) => {
+        setLoggedExercises(currentLogs => currentLogs.map(log => {
+            if (log.tempId !== tempId) return log;
+            const newWeight = value === '' ? undefined : Number(value);
+            return { ...log, barbellWeight: newWeight };
         }));
     };
     
@@ -278,7 +361,14 @@ const WorkoutSessionScreen: React.FC = () => {
     
                     if (isCountType) {
                         if (set.reps === undefined) {
-                            set.reps = originalSet.reps ?? originalSet.repsMin; 
+                            // When completing a set with a rep range, default to the minimum value.
+                            // This is more explicit than `??` and prioritizes the range.
+                            if (originalSet.repsMin !== undefined) {
+                                set.reps = originalSet.repsMin;
+                            } else {
+                                // Fallback for sets that only have a single `reps` value defined.
+                                set.reps = originalSet.reps;
+                            }
                         }
                     } else { // Time-based
                         if (set.time === undefined) {
@@ -422,7 +512,24 @@ const WorkoutSessionScreen: React.FC = () => {
                                             <DumbbellIcon className="h-6 w-6 text-light-text-secondary dark:text-dark-text-secondary" />
                                         )}
                                     </div>
-                                    <h3 className="text-lg font-semibold text-light-text dark:text-dark-text">{exercise.name}</h3>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-lg font-semibold text-light-text dark:text-dark-text">{exercise.name}</h3>
+                                        {exercise.isCounterweight && (
+                                            <span className="text-xs bg-gray-200 dark:bg-gray-700 text-light-text-secondary dark:text-dark-text-secondary px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                Contrapeso
+                                            </span>
+                                        )}
+                                        {exercise.includeBarbellWeight && (
+                                            <span className="text-xs bg-gray-200 dark:bg-gray-700 text-light-text-secondary dark:text-dark-text-secondary px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                Peso da Barra
+                                            </span>
+                                        )}
+                                        {exercise.isWeightDoubled && (
+                                            <span className="text-xs bg-gray-200 dark:bg-gray-700 text-light-text-secondary dark:text-dark-text-secondary px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                Peso 2x
+                                            </span>
+                                        )}
+                                    </div>
                                     <button type="button" onClick={() => setInfoExercise(exercise)} className="p-1 flex items-center justify-center text-light-text-secondary dark:text-dark-text-secondary hover:text-blue-500" aria-label={`Informações sobre ${exercise.name}`}>
                                         <InfoIcon className="h-5 w-5" />
                                     </button>
@@ -439,6 +546,22 @@ const WorkoutSessionScreen: React.FC = () => {
                                 rows={2}
                                 className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 text-sm"
                             />
+
+                            {exercise.includeBarbellWeight && (
+                                <div className="mt-3">
+                                    <label htmlFor={`barbell-${loggedEx.tempId}`} className="block text-sm font-medium mb-1">Peso da Barra (kg)</label>
+                                    <input
+                                        type="number"
+                                        id={`barbell-${loggedEx.tempId}`}
+                                        inputMode="decimal"
+                                        step="any"
+                                        value={loggedEx.barbellWeight ?? ''}
+                                        placeholder={(originalPlanRef.current[exIndex]?.barbellWeight ?? '').toString()}
+                                        onChange={(e) => handleBarbellWeightChange(loggedEx.tempId, e.target.value)}
+                                        className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2"
+                                    />
+                                </div>
+                            )}
                             
                             <div className="space-y-3">
                                 {setsToRender.map((set, setIndex) => {
