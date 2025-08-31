@@ -14,7 +14,9 @@ import ExerciseFormScreen from './screens/ExerciseFormScreen';
 import MeasurementsScreen from './screens/MeasurementsScreen';
 import MuscleGroupsScreen from './screens/MuscleGroupsScreen';
 import PhysicalEvaluationScreen from './screens/PhysicalEvaluationScreen';
+import PhysicalTestsScreen from './screens/PhysicalTestsScreen';
 import ConfirmationModal from './components/ConfirmationModal';
+import { formatDuration } from './utils';
 
 
 import { DumbbellIcon, RepeatIcon, CalendarIcon, BarChartIcon, SettingsIcon } from './components/Icons';
@@ -72,12 +74,13 @@ const App: React.FC = () => {
     // Theme state
     const [theme, setTheme] = useLocalStorage<Theme>('vitruvian_fit_theme', Theme.SYSTEM);
 
-    // Active workout state
-    const [activeWorkoutSession, setActiveWorkoutSession] = useState<WorkoutSession | null>(null);
+    // Active workout state, now persisted to localStorage
+    const [activeWorkoutSession, setActiveWorkoutSession] = useLocalStorage<WorkoutSession | null>('vitruvian_fit_active_session', null);
     const [editingExercise, setEditingExercise] = useState<Exercise | 'new' | null>(null);
     const [isMeasurementsScreenOpen, setIsMeasurementsScreenOpen] = useState(false);
     const [isMuscleGroupsScreenOpen, setIsMuscleGroupsScreenOpen] = useState(false);
     const [isPhysicalEvaluationScreenOpen, setIsPhysicalEvaluationScreenOpen] = useState(false);
+    const [isPhysicalTestsScreenOpen, setIsPhysicalTestsScreenOpen] = useState(false);
     const [selectedEvaluationDate, setSelectedEvaluationDate] = useState<string | null>(null);
     const [infoModalContent, setInfoModalContent] = useState<{ title: string; message: React.ReactNode; onConfirm?: () => void; confirmText?: string; showCancelButton?: boolean, cancelText?: string; } | null>(null);
 
@@ -101,6 +104,39 @@ const App: React.FC = () => {
             return () => mediaQuery.removeEventListener('change', handleChange);
         }
     }, [theme]);
+
+    // Effect to manage persistent workout notifications on app load/reload
+    useEffect(() => {
+        const activeSession = activeWorkoutSession;
+
+        const postMessageToSW = (message: any) => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.active?.postMessage(message);
+                }).catch(error => console.error('Service Worker not ready:', error));
+            }
+        };
+
+        if (activeSession && !activeSession.completed) {
+            const routine = routines.find(r => r.id === activeSession.routineId);
+            if (!routine) return;
+
+            // This ensures notification reappears on page reload if a workout is active.
+            if ('Notification' in window && Notification.permission === 'granted') {
+                postMessageToSW({
+                    type: 'START_WORKOUT',
+                    routineName: routine.name,
+                    startTime: activeSession.startTime,
+                });
+            }
+            
+            return () => {
+                postMessageToSW({ type: 'STOP_WORKOUT' });
+            };
+        } else {
+            postMessageToSW({ type: 'STOP_WORKOUT' });
+        }
+    }, [activeWorkoutSession, routines]);
 
 
     const addExercise = useCallback((exercise: Omit<Exercise, 'id'>) => {
@@ -226,29 +262,37 @@ const App: React.FC = () => {
         setRoutines(prev => prev.map(r => r.id === routineId ? { ...r, folderId } : r));
     }, [setRoutines]);
 
-    const reorderRoutines = useCallback((draggedRoutineId: string, targetRoutineId: string) => {
+    const reorderRoutines = useCallback((draggedRoutineId: string, targetRoutineId: string, position: 'top' | 'bottom') => {
         setRoutines(prevRoutines => {
-            const draggedIndex = prevRoutines.findIndex(r => r.id === draggedRoutineId);
-            const targetIndex = prevRoutines.findIndex(r => r.id === targetRoutineId);
+            const routinesCopy = Array.from(prevRoutines);
+            const draggedIndex = routinesCopy.findIndex(r => r.id === draggedRoutineId);
+            let targetIndex = routinesCopy.findIndex(r => r.id === targetRoutineId);
 
-            if (draggedIndex === -1 || targetIndex === -1) {
+            if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
                 return prevRoutines;
             }
             
-            const draggedRoutine = prevRoutines[draggedIndex];
-            const targetRoutine = prevRoutines[targetIndex];
+            // Create a mutable copy of the dragged routine
+            const draggedRoutine = { ...routinesCopy[draggedIndex] };
+            const targetRoutine = routinesCopy[targetIndex];
 
-            // Only allow reordering within the same folder
+            // If the target is in a different folder, update the dragged routine's folderId
             if (draggedRoutine.folderId !== targetRoutine.folderId) {
-                return prevRoutines;
+                draggedRoutine.folderId = targetRoutine.folderId;
             }
 
-            const newRoutines = [...prevRoutines];
-            newRoutines.splice(draggedIndex, 1);
-            const newTargetIndex = newRoutines.findIndex(r => r.id === targetRoutineId);
-            newRoutines.splice(newTargetIndex, 0, draggedRoutine);
+            // Remove the item from its original position
+            routinesCopy.splice(draggedIndex, 1);
+            
+            // Find the target index again, as it might have shifted after the splice
+            targetIndex = routinesCopy.findIndex(r => r.id === targetRoutineId);
 
-            return newRoutines;
+            // Insert at the new position
+            const insertIndex = position === 'bottom' ? targetIndex + 1 : targetIndex;
+            // Insert the (potentially modified) routine
+            routinesCopy.splice(insertIndex, 0, draggedRoutine);
+
+            return routinesCopy;
         });
     }, [setRoutines]);
 
@@ -266,6 +310,30 @@ const App: React.FC = () => {
         setFolders(prev => prev.filter(f => f.id !== folderId));
     }, [setRoutines, setFolders]);
 
+    const reorderFolders = useCallback((draggedFolderId: string, targetFolderId: string, position: 'top' | 'bottom') => {
+        setFolders(prevFolders => {
+            const foldersCopy = Array.from(prevFolders);
+            const draggedIndex = foldersCopy.findIndex(f => f.id === draggedFolderId);
+            let targetIndex = foldersCopy.findIndex(f => f.id === targetFolderId);
+
+            if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
+                return prevFolders;
+            }
+            
+            // Remove the item from its original position
+            const [reorderedItem] = foldersCopy.splice(draggedIndex, 1);
+
+            // Find the target index again, as it might have shifted
+            targetIndex = foldersCopy.findIndex(f => f.id === targetFolderId);
+            
+            // Insert at the new position
+            const insertIndex = position === 'bottom' ? targetIndex + 1 : targetIndex;
+            foldersCopy.splice(insertIndex, 0, reorderedItem);
+
+            return foldersCopy;
+        });
+    }, [setFolders]);
+
     const logWorkout = useCallback((session: Omit<WorkoutSession, 'id'>) => {
         setWorkouts(prev => [...prev, { ...session, id: `ws${Date.now()}` }]);
     }, [setWorkouts]);
@@ -273,20 +341,19 @@ const App: React.FC = () => {
     const updateWorkout = useCallback((updatedWorkout: WorkoutSession) => {
         setWorkouts(prevWorkouts => prevWorkouts.map(w => w.id === updatedWorkout.id ? updatedWorkout : w));
         setActiveWorkoutSession(null); // After updating, close the session screen
-    }, [setWorkouts]);
+    }, [setWorkouts, setActiveWorkoutSession]);
 
     const deleteWorkout = useCallback((sessionId: string) => {
         setWorkouts(prev => prev.filter(w => w.id !== sessionId));
     }, [setWorkouts]);
     
-    const startWorkoutFromRoutine = useCallback((routineId: string) => {
+    const startWorkoutFromRoutine = useCallback(async (routineId: string) => {
         const routine = routines.find(r => r.id === routineId);
         if (!routine) {
             console.error("Routine not found to start workout");
             return;
         }
 
-        // Check for counterweight exercises and missing body mass
         const hasCounterweightExercise = routine.plannedExercises.some(pe => {
             const exercise = exercises.find(e => e.id === pe.exerciseId);
             return exercise?.isCounterweight;
@@ -306,35 +373,63 @@ const App: React.FC = () => {
                     setIsPhysicalEvaluationScreenOpen(true);
                 }
             });
-            return; // Stop the workout from starting
+            return;
         }
 
-        const newSession: WorkoutSession = {
-            id: `ws_temp_${Date.now()}`, // Temporary ID to indicate it's a new, unsaved session
-            routineId: routine.id,
-            date: new Date().toISOString().split('T')[0],
-            startTime: new Date().toISOString(),
-            endTime: null,
-            loggedExercises: JSON.parse(JSON.stringify(routine.plannedExercises || [])),
-            completed: false,
+        const createAndStartSession = (permissionGranted: boolean) => {
+            const newSession: WorkoutSession = {
+                id: `ws_temp_${Date.now()}`,
+                routineId: routine.id,
+                date: new Date().toISOString().split('T')[0],
+                startTime: new Date().toISOString(),
+                endTime: null,
+                loggedExercises: JSON.parse(JSON.stringify(routine.plannedExercises || [])),
+                completed: false,
+            };
+            setActiveWorkoutSession(newSession);
+
+            if (permissionGranted) {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.active?.postMessage({
+                            type: 'START_WORKOUT',
+                            routineName: routine.name,
+                            startTime: newSession.startTime,
+                        });
+                    });
+                }
+            }
         };
 
-        // Do NOT add to the main workouts list yet. It will be added only when 'Finish Workout' is clicked.
-        setActiveWorkoutSession(newSession);
-    }, [routines, exercises, evaluations, setActiveWorkoutSession, setActiveView, setIsPhysicalEvaluationScreenOpen]);
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                createAndStartSession(true);
+            } else if (Notification.permission === 'denied') {
+                setInfoModalContent({
+                    title: 'Notificações Bloqueadas',
+                    message: 'As notificações de treino estão desativadas. Você pode ativá-las nas configurações do seu navegador para ser lembrado quando um treino estiver em andamento em segundo plano.',
+                    confirmText: "Ok, iniciar treino",
+                    showCancelButton: false,
+                    onConfirm: () => createAndStartSession(false)
+                });
+            } else { // 'default'
+                const permissionResult = await Notification.requestPermission();
+                createAndStartSession(permissionResult === 'granted');
+            }
+        } else {
+            createAndStartSession(false);
+        }
+    }, [routines, exercises, evaluations, setInfoModalContent, setActiveView, setIsPhysicalEvaluationScreenOpen, setActiveWorkoutSession]);
 
     const saveEvaluation = useCallback((evaluationToSave: Evaluation) => {
         setEvaluations(prev => {
             const existingIndex = prev.findIndex(e => e.date === evaluationToSave.date);
             const newEvals = [...prev];
             if (existingIndex > -1) {
-                // Update existing
                 newEvals[existingIndex] = evaluationToSave;
             } else {
-                // Add new
                 newEvals.push(evaluationToSave);
             }
-            // Sort by date descending
             newEvals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return newEvals;
         });
@@ -357,6 +452,7 @@ const App: React.FC = () => {
         isMeasurementsScreenOpen, setIsMeasurementsScreenOpen,
         isMuscleGroupsScreenOpen, setIsMuscleGroupsScreenOpen,
         isPhysicalEvaluationScreenOpen, setIsPhysicalEvaluationScreenOpen,
+        isPhysicalTestsScreenOpen, setIsPhysicalTestsScreenOpen,
         theme, setTheme,
         setInfoModalContent,
         addExercise,
@@ -372,6 +468,7 @@ const App: React.FC = () => {
         addFolder,
         updateFolder,
         deleteFolder,
+        reorderFolders,
         logWorkout,
         updateWorkout,
         deleteWorkout,
@@ -382,18 +479,21 @@ const App: React.FC = () => {
         deleteEvaluation,
         startWorkoutFromRoutine,
     }), [
-        exercises, routines, folders, workouts, muscleGroups, evaluations, activeWorkoutSession, editingExercise, theme, isMeasurementsScreenOpen, isMuscleGroupsScreenOpen, isPhysicalEvaluationScreenOpen, selectedEvaluationDate,
+        exercises, routines, folders, workouts, muscleGroups, evaluations, activeWorkoutSession, editingExercise, theme, isMeasurementsScreenOpen, isMuscleGroupsScreenOpen, isPhysicalEvaluationScreenOpen, isPhysicalTestsScreenOpen, selectedEvaluationDate,
         addExercise, updateExercise, deleteExercise, duplicateExercise,
         addRoutine, updateRoutine, deleteRoutine, duplicateRoutine, moveRoutineToFolder, reorderRoutines,
-        addFolder, updateFolder, deleteFolder, 
+        addFolder, updateFolder, deleteFolder, reorderFolders,
         logWorkout, updateWorkout, deleteWorkout, 
         addMuscleGroup, editMuscleGroup, deleteMuscleGroup,
         saveEvaluation, deleteEvaluation,
         startWorkoutFromRoutine,
-        setExercises, setRoutines, setFolders, setWorkouts, setMuscleGroups, setEvaluations, setTheme, setInfoModalContent, setActiveWorkoutSession, setEditingExercise, setIsMeasurementsScreenOpen, setIsMuscleGroupsScreenOpen, setIsPhysicalEvaluationScreenOpen, setSelectedEvaluationDate,
+        setExercises, setRoutines, setFolders, setWorkouts, setMuscleGroups, setEvaluations, setTheme, setInfoModalContent, setActiveWorkoutSession, setEditingExercise, setIsMeasurementsScreenOpen, setIsMuscleGroupsScreenOpen, setIsPhysicalEvaluationScreenOpen, setIsPhysicalTestsScreenOpen, setSelectedEvaluationDate,
     ]);
 
     const renderContent = () => {
+        if (isPhysicalTestsScreenOpen) {
+            return <PhysicalTestsScreen />;
+        }
         if (isPhysicalEvaluationScreenOpen) {
             return <PhysicalEvaluationScreen />;
         }
@@ -423,7 +523,7 @@ const App: React.FC = () => {
         setActiveView(view);
     }
 
-    const isFullScreenView = activeWorkoutSession || editingExercise || isMeasurementsScreenOpen || isMuscleGroupsScreenOpen || isPhysicalEvaluationScreenOpen;
+    const isFullScreenView = activeWorkoutSession || editingExercise || isMeasurementsScreenOpen || isMuscleGroupsScreenOpen || isPhysicalEvaluationScreenOpen || isPhysicalTestsScreenOpen;
 
     return (
         <AppContext.Provider value={contextValue}>

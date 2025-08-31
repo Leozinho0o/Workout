@@ -1,5 +1,4 @@
 const CACHE_NAME = 'vitruvian-fit-cache-v1';
-const NOTIFICATION_TAG = 'vitruvian-fit-workout';
 
 // On install, cache the app shell and other critical assets.
 // This makes the app load faster on subsequent visits and work offline.
@@ -11,7 +10,9 @@ self.addEventListener('install', (event) => {
       return cache.addAll([
           '/',
           '/index.html',
-          '/manifest.json'
+          '/manifest.json',
+          '/assets/icon-192x192.png',
+          '/assets/icon-512x512.png'
       ]);
     }).then(() => {
         // Force the waiting service worker to become the active service worker.
@@ -67,49 +68,99 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Listen for messages from the client to show/update/close notifications.
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SHOW_WORKOUT_NOTIFICATION') {
-        const { title, body } = event.data.payload;
-        const options = {
-            body: body,
-            icon: '/assets/icon-192x192.png',
-            badge: '/assets/icon-192x192.png',
-            tag: NOTIFICATION_TAG,
-            renotify: false, // Don't make a sound/vibration on update
-            silent: true,
-            requireInteraction: true, // Make it persistent until dismissed or closed
-        };
-        event.waitUntil(self.registration.showNotification(title, options));
-    } else if (event.data && event.data.type === 'CLOSE_WORKOUT_NOTIFICATION') {
-        event.waitUntil(
-            self.registration.getNotifications({ tag: NOTIFICATION_TAG })
-                .then(notifications => {
-                    notifications.forEach(notification => notification.close());
-                })
-        );
+// --- WORKOUT NOTIFICATION LOGIC ---
+
+// This variable will hold the workout data while a session is active.
+let workoutData;
+
+/**
+ * Shows a single, static, persistent notification that a workout is in progress.
+ * @returns {Promise<void>} A promise that resolves when the notification is shown.
+ */
+const showWorkoutNotification = () => {
+    if (!workoutData) {
+        return Promise.resolve();
+    }
+    
+    const title = 'Vitruvian Fit';
+    const options = {
+        body: `Treino "${workoutData.routineName}" em andamento. Toque para ver o progresso.`,
+        tag: 'workout-notification', // A unique tag ensures this notification replaces any existing one.
+        icon: '/assets/icon-192x192.png',
+        badge: '/assets/icon-192x192.png',
+        silent: true, // No sound for this notification.
+        requireInteraction: true, // Makes the notification persistent on most platforms.
+    };
+
+    // showNotification is an async operation that returns a promise.
+    return self.registration.showNotification(title, options);
+};
+
+/**
+ * Stores workout data and triggers the notification display.
+ * @param {object} data - The workout data from the main app.
+ * @returns {Promise<void>}
+ */
+const startWorkout = (data) => {
+    workoutData = {
+        routineName: data.routineName,
+        startTime: new Date(data.startTime).getTime(),
+    };
+    return showWorkoutNotification();
+};
+
+/**
+ * Clears workout data and closes any active workout notification.
+ * @returns {Promise<void>}
+ */
+const stopWorkout = () => {
+    workoutData = null;
+    // Find our specific notification by its tag and close it.
+    return self.registration.getNotifications({ tag: 'workout-notification' }).then(notifications => {
+        notifications.forEach(notification => notification.close());
+    });
+};
+
+// Listen for messages from the main application.
+self.addEventListener('message', event => {
+    const data = event.data;
+    if (!data) return;
+
+    switch (data.type) {
+        case 'START_WORKOUT':
+            // event.waitUntil() is crucial. It tells the browser not to terminate the
+            // service worker until the promise (showing the notification) is resolved.
+            // This guarantees the notification is displayed even if the user switches apps immediately.
+            event.waitUntil(startWorkout(data));
+            break;
+        case 'STOP_WORKOUT':
+            event.waitUntil(stopWorkout());
+            break;
     }
 });
 
-// Handle notification click events.
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
+// Handle what happens when the user clicks the notification.
+self.addEventListener('notificationclick', event => {
+    // We only care about our workout notification.
+    if (event.notification.tag === 'workout-notification') {
+        // Close the notification when clicked.
+        event.notification.close();
 
-    // This looks for an open tab with the same origin and focuses it.
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            if (clientList.length > 0) {
-                let client = clientList[0];
-                // Find a focused client or fall back to the first one.
-                for (let i = 0; i < clientList.length; i++) {
-                    if (clientList[i].focused) {
-                        client = clientList[i];
+        // Focus the existing app window/tab or open a new one.
+        event.waitUntil(
+            clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+                // If a client is already open, focus it.
+                for (const client of clientList) {
+                    const url = new URL(client.url);
+                    if (url.pathname === '/' && 'focus' in client) {
+                        return client.focus();
                     }
                 }
-                return client.focus();
-            }
-            // If no tab is open, open a new one.
-            return self.clients.openWindow('/');
-        })
-    );
-});
+                // Otherwise, open a new window.
+                if (clients.openWindow) {
+                    return clients.openWindow('/');
+                }
+            })
+        );
+    }
+}, false);

@@ -14,7 +14,7 @@ export const formatSecondsToMMSS = (totalSeconds: number | null | undefined): st
 
 // Helper function to format duration for display (HH:MM:SS or MM:SS)
 export const formatDuration = (totalSeconds: number | null | undefined): string | null => {
-  if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds <= 0) {
+  if (totalSeconds == null || isNaN(totalSeconds) || totalSeconds < 0) {
     return null;
   }
   const hours = Math.floor(totalSeconds / 3600);
